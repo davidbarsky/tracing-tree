@@ -222,26 +222,5 @@ where
         writeln!(&mut visitor.stdout).unwrap();
     }
 
-    fn on_close(&self, _: Id, _: Context<S>) {
-        // let end = Local::now();
-        // let span = ctx.span(&id).expect("in on_close but span does not exist");
-        // let ext = span.extensions();
-        // let data = ext.get::<Data>().expect("span does not have metric data");
-
-        // let indent = ctx.scope().collect::<Vec<_>>().len();
-        // let mut stdout = self.stdout.lock();
-        // self.print_indent(&mut stdout, indent)
-        //     .expect("Unable to write to stdout");
-
-        // let elapsed = end - data.start;
-        // writeln!(
-        //     &mut stdout,
-        //     "Elapsed: {timestamp}{unit}",
-        //     timestamp = Style::new()
-        //         .dimmed()
-        //         .paint(elapsed.num_milliseconds().to_string()),
-        //     unit = Style::new().dimmed().paint("ms"),
-        // )
-        // .expect("Unable to write to stdout");
-    }
+    fn on_close(&self, _: Id, _: Context<S>) {}
 }

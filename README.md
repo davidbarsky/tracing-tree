@@ -25,12 +25,14 @@ information on the console:
     1502ms <b> INFO</b> exit
 </pre>
 
+(Format inspired by [slog-term](https://github.com/slog-rs/slog#terminal-output-example))
+
 ## Setup
 
 After instrumenting your app with
 [tracing](https://github.com/tokio-rs/tracing), add this subscriber like this:
 
-```
-    let subscriber = Registry::default().with(HierarchicalLayer::new(2));
-    tracing::subscriber::set_global_default(subscriber).unwrap();
+```rust
+let subscriber = Registry::default().with(HierarchicalLayer::new(2));
+tracing::subscriber::set_global_default(subscriber).unwrap();
 ```

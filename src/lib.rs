@@ -81,10 +81,11 @@ impl<'a> fmt::Display for ColorLevel<'a> {
 
 impl HierarchicalLayer {
     pub fn new(indent_amount: usize) -> Self {
+        let ansi = atty::is(atty::Stream::Stdout);
         Self {
             indent_amount,
             stdout: io::stdout(),
-            ansi: true,
+            ansi,
         }
     }
 

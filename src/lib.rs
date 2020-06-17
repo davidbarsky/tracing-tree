@@ -15,6 +15,7 @@ use tracing_subscriber::{
 pub struct HierarchicalLayer {
     stdout: io::Stdout,
     indent_amount: usize,
+    ansi: bool,
 }
 
 struct Data {
@@ -80,9 +81,23 @@ impl<'a> fmt::Display for ColorLevel<'a> {
 
 impl HierarchicalLayer {
     pub fn new(indent_amount: usize) -> Self {
+        let ansi = atty::is(atty::Stream::Stdout);
         Self {
             indent_amount,
             stdout: io::stdout(),
+            ansi,
+        }
+    }
+
+    pub fn with_ansi(self, ansi: bool) -> Self {
+        Self { ansi, ..self }
+    }
+
+    fn styled(&self, style: Style, text: impl AsRef<str>) -> String {
+        if self.ansi {
+            style.paint(text.as_ref()).to_string()
+        } else {
+            text.as_ref().to_string()
         }
     }
 
@@ -151,16 +166,13 @@ where
         write!(
             &mut stdout,
             "{name}",
-            name = Style::new()
-                .fg(Color::Green)
-                .bold()
-                .paint(span.metadata().name())
+            name = self.styled(Style::new().fg(Color::Green).bold(), span.metadata().name())
         )
         .unwrap();
         write!(
             &mut stdout,
             "{}",
-            Style::new().fg(Color::Green).paint("{") // Style::new().fg(Color::Green).dimmed().paint("{")
+            self.styled(Style::new().fg(Color::Green).bold(), "{") // Style::new().fg(Color::Green).dimmed().paint("{")
         )
         .unwrap();
         self.print_kvs(&mut stdout, data.kvs.iter().map(|(k, v)| (k, v)), "")
@@ -168,7 +180,7 @@ where
         write!(
             &mut stdout,
             "{}",
-            Style::new().fg(Color::Green).bold().paint("}") // Style::new().dimmed().paint("}")
+            self.styled(Style::new().fg(Color::Green).bold(), "}") // Style::new().dimmed().paint("}")
         )
         .unwrap();
         writeln!(&mut stdout).unwrap();
@@ -203,14 +215,21 @@ where
         let now = Local::now();
         if let Some(start) = start {
             let elapsed = now - start;
+            let level = event.metadata().level();
+            let level = if self.ansi {
+                ColorLevel(level).to_string()
+            } else {
+                level.to_string()
+            };
             write!(
                 &mut stdout,
                 "{timestamp}{unit} {level}",
-                timestamp = Style::new()
-                    .dimmed()
-                    .paint(elapsed.num_milliseconds().to_string()),
-                unit = Style::new().dimmed().paint("ms"),
-                level = ColorLevel(event.metadata().level())
+                timestamp = self.styled(
+                    Style::new().dimmed(),
+                    elapsed.num_milliseconds().to_string()
+                ),
+                unit = self.styled(Style::new().dimmed(), "ms"),
+                level = level,
             )
             .expect("Unable to write to stdout");
         }

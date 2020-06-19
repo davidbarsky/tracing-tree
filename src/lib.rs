@@ -1,5 +1,6 @@
 use ansi_term::{Color, Style};
 use chrono::{DateTime, Local};
+use std::ops::DerefMut as _;
 use std::sync::Mutex;
 use std::{
     fmt::{self, Write as _},

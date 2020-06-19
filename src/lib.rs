@@ -1,5 +1,6 @@
 use ansi_term::{Color, Style};
 use chrono::{DateTime, Local};
+use std::ops::DerefMut as _;
 use std::sync::Mutex;
 use std::{
     fmt::{self, Write as _},
@@ -22,7 +23,24 @@ pub struct HierarchicalLayer {
     stdout: io::Stdout,
     indent_amount: usize,
     ansi: bool,
-    buf: Mutex<String>,
+    bufs: Mutex<Buffers>,
+}
+
+#[derive(Debug)]
+struct Buffers {
+    main_buf: String,
+    current_buf: String,
+    indent_buf: String,
+}
+
+impl Buffers {
+    fn new() -> Self {
+        Self {
+            main_buf: String::new(),
+            current_buf: String::new(),
+            indent_buf: String::new(),
+        }
+    }
 }
 
 struct Data {
@@ -72,9 +90,16 @@ impl<'a> Visit for FmtEvent<'a> {
 }
 
 impl<'a> FmtEvent<'a> {
-    fn print(&mut self, outer_buf: &mut String, indent: usize, indent_amount: usize) {
-        let indented = indent_block(&self.buf, indent, indent_amount);
-        outer_buf.push_str(&indented);
+    fn print(
+        &mut self,
+        outer_buf: &mut String,
+        indent_buf: &mut String,
+        indent: usize,
+        indent_amount: usize,
+    ) {
+        indent_block(&mut self.buf, indent_buf, indent, indent_amount);
+        outer_buf.push_str(&indent_buf);
+        indent_buf.clear();
     }
 }
 
@@ -93,17 +118,17 @@ impl<'a> fmt::Display for ColorLevel<'a> {
     }
 }
 
-fn indent_block(block: &str, indent: usize, indent_amount: usize) -> String {
+fn indent_block(block: &mut String, buf: &mut String, indent: usize, indent_amount: usize) {
     let lines: Vec<_> = block.lines().collect();
     let indent_spaces = indent * indent_amount;
-    let mut buf = String::with_capacity(block.len() + (lines.len() * indent_spaces));
+    buf.reserve(block.len() + (lines.len() * indent_spaces));
     let indent_str = String::from(" ").repeat(indent_spaces);
     for line in lines {
         buf.push_str(&indent_str);
         buf.push_str(line);
         buf.push('\n');
     }
-    buf
+    block.clear();
 }
 
 impl HierarchicalLayer {
@@ -113,7 +138,7 @@ impl HierarchicalLayer {
             indent_amount,
             stdout: io::stdout(),
             ansi,
-            buf: Mutex::new(String::new()),
+            bufs: Mutex::new(Buffers::new()),
         }
     }
 
@@ -179,8 +204,11 @@ where
         let ext = span.extensions();
         let data = ext.get::<Data>().expect("span does not have data");
 
-        let mut buf = self.buf.lock().unwrap();
-        let mut current_buf = String::new();
+        let mut guard = self.bufs.lock().unwrap();
+        let bufs = guard.deref_mut();
+        let buf = &mut bufs.main_buf;
+        let mut current_buf = &mut bufs.current_buf;
+        let indent_buf = &mut bufs.indent_buf;
 
         let indent = ctx.scope().collect::<Vec<_>>().len() - 1;
 
@@ -205,13 +233,16 @@ where
         )
         .unwrap();
         writeln!(current_buf).unwrap();
-        let indented = indent_block(&current_buf, indent, self.indent_amount);
-        buf.push_str(&indented);
+        indent_block(current_buf, indent_buf, indent, self.indent_amount);
+        buf.push_str(&indent_buf);
+        indent_buf.clear();
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
-        let mut buf = self.buf.lock().unwrap();
-        let mut event_buf = String::new();
+        let mut guard = self.bufs.lock().unwrap();
+        let bufs = guard.deref_mut();
+        let mut buf = &mut bufs.main_buf;
+        let mut event_buf = &mut bufs.current_buf;
         // printing the indentation
         let indent = if let Some(_) = ctx.current_span().id() {
             // size hint isn't implemented on Scope.
@@ -264,13 +295,13 @@ where
         event.record(&mut visitor);
         buf.reserve(visitor.buf.len());
         writeln!(&mut visitor.buf).unwrap();
-        visitor.print(&mut buf, indent, self.indent_amount);
+        visitor.print(&mut buf, &mut bufs.indent_buf, indent, self.indent_amount);
     }
 
     fn on_close(&self, _id: Id, _ctx: Context<S>) {
         let mut stdout = self.stdout.lock();
-        let mut buf = self.buf.lock().unwrap();
-        write!(stdout, "{}", buf).unwrap();
-        buf.clear();
+        let mut bufs = self.bufs.lock().unwrap();
+        write!(stdout, "{}", &bufs.main_buf).unwrap();
+        bufs.main_buf.clear();
     }
 }

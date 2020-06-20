@@ -5,7 +5,6 @@ use std::sync::Mutex;
 use std::{
     fmt::{self, Write as _},
     io,
-    io::Write as _,
 };
 
 use tracing::{
@@ -40,6 +39,11 @@ impl Buffers {
             current_buf: String::new(),
             indent_buf: String::new(),
         }
+    }
+
+    fn flush_main_buf(&mut self, mut writer: impl io::Write) {
+        write!(writer, "{}", &self.main_buf).unwrap();
+        self.main_buf.clear();
     }
 
     fn flush_indent_buf(&mut self) {
@@ -196,8 +200,7 @@ impl HierarchicalLayer {
     fn flush(&self) {
         let mut stdout = self.stdout.lock();
         let mut bufs = self.bufs.lock().unwrap();
-        write!(stdout, "{}", &bufs.main_buf).unwrap();
-        bufs.main_buf.clear();
+        bufs.flush_main_buf(&mut stdout);
     }
 }
 
@@ -248,6 +251,7 @@ where
             self.styled(Style::new().fg(Color::Green).bold(), "}") // Style::new().dimmed().paint("}")
         )
         .unwrap();
+
         bufs.indent_current(indent, self.indent_amount);
         bufs.flush_indent_buf();
     }
@@ -283,24 +287,24 @@ where
         let now = Local::now();
         if let Some(start) = start {
             let elapsed = now - start;
-            let level = event.metadata().level();
-            let level = if self.ansi {
-                ColorLevel(level).to_string()
-            } else {
-                level.to_string()
-            };
             write!(
                 &mut event_buf,
-                "{timestamp}{unit} {level}",
+                "{timestamp}{unit} ",
                 timestamp = self.styled(
                     Style::new().dimmed(),
                     elapsed.num_milliseconds().to_string()
                 ),
                 unit = self.styled(Style::new().dimmed(), "ms"),
-                level = level,
             )
             .expect("Unable to write to buffer");
         }
+        let level = event.metadata().level();
+        let level = if self.ansi {
+            ColorLevel(level).to_string()
+        } else {
+            level.to_string()
+        };
+        write!(&mut event_buf, "{level}", level = level).expect("Unable to write to buffer");
         let mut visitor = FmtEvent {
             comma: false,
             bufs: &mut bufs,
@@ -309,5 +313,7 @@ where
         visitor.finish(indent, self.indent_amount);
     }
 
-    fn on_close(&self, _id: Id, _ctx: Context<S>) {}
+    fn on_close(&self, _id: Id, _ctx: Context<S>) {
+        self.flush();
+    }
 }

@@ -28,9 +28,9 @@ pub struct HierarchicalLayer {
 
 #[derive(Debug)]
 struct Buffers {
-    main_buf: String,
-    current_buf: String,
-    indent_buf: String,
+    pub main_buf: String,
+    pub current_buf: String,
+    pub indent_buf: String,
 }
 
 impl Buffers {
@@ -41,6 +41,20 @@ impl Buffers {
             indent_buf: String::new(),
         }
     }
+
+    fn flush_indent_buf(&mut self) {
+        self.main_buf.push_str(&self.indent_buf);
+        self.indent_buf.clear();
+    }
+
+    fn indent_current(&mut self, indent: usize, indent_amount: usize) {
+        indent_block(
+            &mut self.current_buf,
+            &mut self.indent_buf,
+            indent,
+            indent_amount,
+        );
+    }
 }
 
 struct Data {
@@ -49,7 +63,7 @@ struct Data {
 }
 
 struct FmtEvent<'a> {
-    buf: &'a mut String,
+    bufs: &'a mut Buffers,
     comma: bool,
 }
 
@@ -72,34 +86,24 @@ impl Visit for Data {
 
 impl<'a> Visit for FmtEvent<'a> {
     fn record_debug(&mut self, field: &Field, value: &dyn fmt::Debug) {
-        write!(
-            self.buf,
-            "{comma} ",
-            comma = if self.comma { "," } else { "" },
-        )
-        .unwrap();
+        let buf = &mut self.bufs.current_buf;
+        write!(buf, "{comma} ", comma = if self.comma { "," } else { "" },).unwrap();
         let name = field.name();
         if name == "message" {
-            write!(self.buf, "{:?}", value).unwrap();
+            write!(buf, "{:?}", value).unwrap();
             self.comma = true;
         } else {
-            write!(self.buf, "{}={:?}", name, value).unwrap();
+            write!(buf, "{}={:?}", name, value).unwrap();
             self.comma = true;
         }
     }
 }
 
 impl<'a> FmtEvent<'a> {
-    fn print(
-        &mut self,
-        outer_buf: &mut String,
-        indent_buf: &mut String,
-        indent: usize,
-        indent_amount: usize,
-    ) {
-        indent_block(&mut self.buf, indent_buf, indent, indent_amount);
-        outer_buf.push_str(&indent_buf);
-        indent_buf.clear();
+    fn finish(&mut self, indent: usize, indent_amount: usize) {
+        self.bufs.current_buf.push('\n');
+        self.bufs.indent_current(indent, indent_amount);
+        self.bufs.flush_indent_buf();
     }
 }
 
@@ -220,9 +224,7 @@ where
 
         let mut guard = self.bufs.lock().unwrap();
         let bufs = guard.deref_mut();
-        let buf = &mut bufs.main_buf;
         let mut current_buf = &mut bufs.current_buf;
-        let indent_buf = &mut bufs.indent_buf;
 
         let indent = ctx.scope().collect::<Vec<_>>().len() - 1;
 
@@ -240,22 +242,19 @@ where
         .unwrap();
         self.print_kvs(&mut current_buf, data.kvs.iter().map(|(k, v)| (k, v)), "")
             .unwrap();
-        write!(
+        writeln!(
             current_buf,
             "{}",
             self.styled(Style::new().fg(Color::Green).bold(), "}") // Style::new().dimmed().paint("}")
         )
         .unwrap();
-        writeln!(current_buf).unwrap();
-        indent_block(current_buf, indent_buf, indent, self.indent_amount);
-        buf.push_str(&indent_buf);
-        indent_buf.clear();
+        bufs.indent_current(indent, self.indent_amount);
+        bufs.flush_indent_buf();
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
         let mut guard = self.bufs.lock().unwrap();
-        let bufs = guard.deref_mut();
-        let mut buf = &mut bufs.main_buf;
+        let mut bufs = guard.deref_mut();
         let mut event_buf = &mut bufs.current_buf;
         // printing the indentation
         let indent = if let Some(_) = ctx.current_span().id() {
@@ -304,12 +303,10 @@ where
         }
         let mut visitor = FmtEvent {
             comma: false,
-            buf: &mut event_buf,
+            bufs: &mut bufs,
         };
         event.record(&mut visitor);
-        buf.reserve(visitor.buf.len());
-        writeln!(&mut visitor.buf).unwrap();
-        visitor.print(&mut buf, &mut bufs.indent_buf, indent, self.indent_amount);
+        visitor.finish(indent, self.indent_amount);
     }
 
     fn on_close(&self, _id: Id, _ctx: Context<S>) {}

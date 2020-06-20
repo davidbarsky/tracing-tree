@@ -185,8 +185,7 @@ impl HierarchicalLayer {
     fn flush(&self) {
         let mut stdout = self.stdout.lock();
         let mut bufs = self.bufs.lock().unwrap();
-        write!(stdout, "{}", &bufs.main_buf).unwrap();
-        bufs.main_buf.clear();
+        bufs.flush_main_buf(&mut stdout);
     }
 }
 
@@ -301,5 +300,7 @@ where
         bufs.flush_current_buf(self.stdout.lock());
     }
 
-    fn on_close(&self, _id: Id, _ctx: Context<S>) {}
+    fn on_close(&self, _id: Id, _ctx: Context<S>) {
+        self.flush();
+    }
 }

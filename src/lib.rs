@@ -148,9 +148,8 @@ impl HierarchicalLayer {
         }
     }
 
-    pub fn with_ansi(&mut self, ansi: bool) -> &mut Self {
-        self.ansi = ansi;
-        self
+    pub fn with_ansi(self, ansi: bool) -> Self {
+        Self { ansi, ..self }
     }
 
     fn styled(&self, style: Style, text: impl AsRef<str>) -> String {
@@ -180,18 +179,6 @@ impl HierarchicalLayer {
             write!(buf, ", {}={}", k.as_ref(), v)?;
         }
         Ok(())
-    }
-
-    fn flush(&self) {
-        let mut stdout = self.stdout.lock();
-        let mut bufs = self.bufs.lock().unwrap();
-        bufs.flush_main_buf(&mut stdout);
-    }
-}
-
-impl Drop for HierarchicalLayer {
-    fn drop(&mut self) {
-        self.flush();
     }
 }
 
@@ -300,7 +287,5 @@ where
         bufs.flush_current_buf(self.stdout.lock());
     }
 
-    fn on_close(&self, _id: Id, _ctx: Context<S>) {
-        self.flush();
-    }
+    fn on_close(&self, _id: Id, _ctx: Context<S>) {}
 }

@@ -1,6 +1,5 @@
 use ansi_term::{Color, Style};
 use chrono::{DateTime, Local};
-use std::ops::DerefMut as _;
 use std::sync::Mutex;
 use std::{
     fmt::{self, Write as _},
@@ -173,23 +172,10 @@ impl HierarchicalLayer {
     {
         let mut kvs = kvs.into_iter();
         if let Some((k, v)) = kvs.next() {
-            write!(
-                buf,
-                "{}{}={}",
-                leading,
-                // Style::new().fg(Color::Purple).bold().paint(k.as_ref()),
-                k.as_ref(),
-                v
-            )?;
+            write!(buf, "{}{}={}", leading, k.as_ref(), v)?;
         }
         for (k, v) in kvs {
-            write!(
-                buf,
-                ", {}={}",
-                // Style::new().fg(Color::Purple).bold().paint(k.as_ref()),
-                k.as_ref(),
-                v
-            )?;
+            write!(buf, ", {}={}", k.as_ref(), v)?;
         }
         Ok(())
     }
@@ -211,10 +197,10 @@ where
         let data = ext.get::<Data>().expect("span does not have data");
 
         let mut guard = self.bufs.lock().unwrap();
-        let bufs = guard.deref_mut();
+        let bufs = &mut *guard;
         let mut current_buf = &mut bufs.current_buf;
 
-        let indent = ctx.scope().collect::<Vec<_>>().len() - 1;
+        let indent = ctx.scope().count() - 1;
 
         write!(
             current_buf,
@@ -244,12 +230,12 @@ where
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
         let mut guard = self.bufs.lock().unwrap();
-        let mut bufs = guard.deref_mut();
+        let mut bufs = &mut *guard;
         let mut event_buf = &mut bufs.current_buf;
         // printing the indentation
-        let indent = if let Some(_) = ctx.current_span().id() {
+        let indent = if ctx.current_span().id().is_some() {
             // size hint isn't implemented on Scope.
-            ctx.scope().collect::<Vec<_>>().len()
+            ctx.scope().count()
         } else {
             0
         };

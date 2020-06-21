@@ -16,10 +16,18 @@ use tracing_subscriber::{
     registry::LookupSpan,
 };
 
+const LINE_VERT: &str = "│";
+const LINE_HORIZ: &str = "─";
+const LINE_HORIZ_THICK: &str = "━";
+const LINE_BRANCH: &str = "┝";
+#[allow(unused)]
+const LINE_LEAF: &str = "┕";
+
 #[derive(Debug)]
 pub struct HierarchicalLayer {
     stdout: io::Stdout,
     indent_amount: usize,
+    indent_lines: bool,
     ansi: bool,
     bufs: Mutex<Buffers>,
 }
@@ -48,12 +56,20 @@ impl Buffers {
         self.indent_buf.clear();
     }
 
-    fn indent_current(&mut self, indent: usize, indent_amount: usize) {
+    fn indent_current(
+        &mut self,
+        indent: usize,
+        indent_amount: usize,
+        indent_lines: bool,
+        is_span: bool,
+    ) {
         indent_block(
             &mut self.current_buf,
             &mut self.indent_buf,
             indent,
             indent_amount,
+            indent_lines,
+            is_span,
         );
         self.current_buf.clear();
     }
@@ -102,9 +118,10 @@ impl<'a> Visit for FmtEvent<'a> {
 }
 
 impl<'a> FmtEvent<'a> {
-    fn finish(&mut self, indent: usize, indent_amount: usize) {
+    fn finish(&mut self, indent: usize, indent_amount: usize, indent_lines: bool) {
         self.bufs.current_buf.push('\n');
-        self.bufs.indent_current(indent, indent_amount);
+        self.bufs
+            .indent_current(indent, indent_amount, indent_lines, false);
         self.bufs.flush_indent_buf();
     }
 }
@@ -124,15 +141,67 @@ impl<'a> fmt::Display for ColorLevel<'a> {
     }
 }
 
-fn indent_block(block: &mut String, buf: &mut String, indent: usize, indent_amount: usize) {
+fn indent_block(
+    block: &mut String,
+    buf: &mut String,
+    indent: usize,
+    indent_amount: usize,
+    indent_lines: bool,
+    is_span: bool,
+) {
     let lines: Vec<_> = block.lines().collect();
     let indent_spaces = indent * indent_amount;
     buf.reserve(block.len() + (lines.len() * indent_spaces));
-    let indent_str = String::from(" ").repeat(indent_spaces);
-    for line in lines {
-        buf.push_str(&indent_str);
-        buf.push_str(line);
+    if indent_lines {
+        if lines.len() == 0 {
+            return;
+        } else if indent_spaces == 0 {
+            for line in &lines {
+                buf.push_str(line);
+                buf.push('\n');
+            }
+            return;
+        }
+        let mut s = String::with_capacity(indent_spaces);
+        for i in 0..(indent_spaces.saturating_sub(indent_amount)) {
+            if i % indent_amount == 0 {
+                s.push_str(LINE_VERT);
+            } else {
+                s.push(' ');
+            }
+        }
+        buf.push_str(&s);
+        buf.push_str(LINE_BRANCH);
+        let horiz = if is_span {
+            LINE_HORIZ_THICK
+        } else {
+            LINE_HORIZ
+        };
+        for _ in 0..(indent_amount.saturating_sub(1)) {
+            buf.push_str(horiz);
+        }
+        buf.push_str(&lines[0]);
         buf.push('\n');
+
+        for i in 0..indent_amount {
+            if i % indent_amount == 0 {
+                s.push_str(LINE_VERT);
+            } else {
+                s.push(' ');
+            }
+        }
+        for line in &lines[1..] {
+            buf.push_str(&s);
+            buf.push_str(line);
+            buf.push('\n');
+        }
+    } else {
+        let indent_str = String::from(" ").repeat(indent_spaces);
+        for line in lines {
+            buf.push_str(&indent_str);
+            buf.push_str(line);
+            buf.push('\n');
+        }
     }
 }
 
@@ -141,6 +210,7 @@ impl HierarchicalLayer {
         let ansi = atty::is(atty::Stream::Stdout);
         Self {
             indent_amount,
+            indent_lines: false,
             stdout: io::stdout(),
             ansi,
             bufs: Mutex::new(Buffers::new()),
@@ -149,6 +219,13 @@ impl HierarchicalLayer {
 
     pub fn with_ansi(self, ansi: bool) -> Self {
         Self { ansi, ..self }
+    }
+
+    pub fn with_indent_lines(self, indent_lines: bool) -> Self {
+        Self {
+            indent_lines,
+            ..self
+        }
     }
 
     fn styled(&self, style: Style, text: impl AsRef<str>) -> String {
@@ -200,7 +277,7 @@ where
         let bufs = &mut *guard;
         let mut current_buf = &mut bufs.current_buf;
 
-        let indent = ctx.scope().count() - 1;
+        let indent = ctx.scope().count().saturating_sub(1);
 
         write!(
             current_buf,
@@ -223,7 +300,7 @@ where
         )
         .unwrap();
 
-        bufs.indent_current(indent, self.indent_amount);
+        bufs.indent_current(indent, self.indent_amount, self.indent_lines, true);
         bufs.flush_indent_buf();
         bufs.flush_current_buf(self.stdout.lock());
     }
@@ -282,9 +359,9 @@ where
             bufs: &mut bufs,
         };
         event.record(&mut visitor);
-        visitor.finish(indent, self.indent_amount);
+        visitor.finish(indent, self.indent_amount, self.indent_lines);
         bufs.flush_current_buf(self.stdout.lock());
     }
 
-    fn on_close(&self, _id: Id, _ctx: Context<S>) {}
+    fn on_exit(&self, _id: &Id, _ctx: Context<S>) {}
 }

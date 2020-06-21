@@ -27,7 +27,6 @@ pub struct HierarchicalLayer {
 
 #[derive(Debug)]
 struct Buffers {
-    pub main_buf: String,
     pub current_buf: String,
     pub indent_buf: String,
 }
@@ -35,19 +34,18 @@ struct Buffers {
 impl Buffers {
     fn new() -> Self {
         Self {
-            main_buf: String::new(),
             current_buf: String::new(),
             indent_buf: String::new(),
         }
     }
 
-    fn flush_main_buf(&mut self, mut writer: impl io::Write) {
-        write!(writer, "{}", &self.main_buf).unwrap();
-        self.main_buf.clear();
+    fn flush_current_buf(&mut self, mut writer: impl io::Write) {
+        write!(writer, "{}", &self.current_buf).unwrap();
+        self.current_buf.clear();
     }
 
     fn flush_indent_buf(&mut self) {
-        self.main_buf.push_str(&self.indent_buf);
+        self.current_buf.push_str(&self.indent_buf);
         self.indent_buf.clear();
     }
 
@@ -58,6 +56,7 @@ impl Buffers {
             indent,
             indent_amount,
         );
+        self.current_buf.clear();
     }
 }
 
@@ -136,7 +135,6 @@ fn indent_block(block: &mut String, buf: &mut String, indent: usize, indent_amou
         buf.push_str(line);
         buf.push('\n');
     }
-    block.clear();
 }
 
 impl HierarchicalLayer {
@@ -150,9 +148,8 @@ impl HierarchicalLayer {
         }
     }
 
-    pub fn with_ansi(&mut self, ansi: bool) -> &mut Self {
-        self.ansi = ansi;
-        self
+    pub fn with_ansi(self, ansi: bool) -> Self {
+        Self { ansi, ..self }
     }
 
     fn styled(&self, style: Style, text: impl AsRef<str>) -> String {
@@ -195,18 +192,6 @@ impl HierarchicalLayer {
             )?;
         }
         Ok(())
-    }
-
-    fn flush(&self) {
-        let mut stdout = self.stdout.lock();
-        let mut bufs = self.bufs.lock().unwrap();
-        bufs.flush_main_buf(&mut stdout);
-    }
-}
-
-impl Drop for HierarchicalLayer {
-    fn drop(&mut self) {
-        self.flush();
     }
 }
 
@@ -254,6 +239,7 @@ where
 
         bufs.indent_current(indent, self.indent_amount);
         bufs.flush_indent_buf();
+        bufs.flush_current_buf(self.stdout.lock());
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
@@ -311,9 +297,8 @@ where
         };
         event.record(&mut visitor);
         visitor.finish(indent, self.indent_amount);
+        bufs.flush_current_buf(self.stdout.lock());
     }
 
-    fn on_close(&self, _id: Id, _ctx: Context<S>) {
-        self.flush();
-    }
+    fn on_close(&self, _id: Id, _ctx: Context<S>) {}
 }

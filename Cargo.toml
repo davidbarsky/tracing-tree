@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["David Barsky <me@davidbarsky.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
+description = "a tracing layer that represents prints a heirarchal tree of spans and events."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

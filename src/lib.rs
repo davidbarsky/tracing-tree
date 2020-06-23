@@ -1,6 +1,11 @@
 use ansi_term::{Color, Style};
 use chrono::{DateTime, Local};
-use std::{fmt, io, io::Write as _};
+use std::sync::Mutex;
+use std::{
+    fmt::{self, Write as _},
+    io,
+};
+
 use tracing::{
     field::{Field, Visit},
     span::{Attributes, Id},
@@ -16,6 +21,42 @@ pub struct HierarchicalLayer {
     stdout: io::Stdout,
     indent_amount: usize,
     ansi: bool,
+    bufs: Mutex<Buffers>,
+}
+
+#[derive(Debug)]
+struct Buffers {
+    pub current_buf: String,
+    pub indent_buf: String,
+}
+
+impl Buffers {
+    fn new() -> Self {
+        Self {
+            current_buf: String::new(),
+            indent_buf: String::new(),
+        }
+    }
+
+    fn flush_current_buf(&mut self, mut writer: impl io::Write) {
+        write!(writer, "{}", &self.current_buf).unwrap();
+        self.current_buf.clear();
+    }
+
+    fn flush_indent_buf(&mut self) {
+        self.current_buf.push_str(&self.indent_buf);
+        self.indent_buf.clear();
+    }
+
+    fn indent_current(&mut self, indent: usize, indent_amount: usize) {
+        indent_block(
+            &mut self.current_buf,
+            &mut self.indent_buf,
+            indent,
+            indent_amount,
+        );
+        self.current_buf.clear();
+    }
 }
 
 struct Data {
@@ -24,7 +65,7 @@ struct Data {
 }
 
 struct FmtEvent<'a> {
-    stdout: io::StdoutLock<'a>,
+    bufs: &'a mut Buffers,
     comma: bool,
 }
 
@@ -47,20 +88,24 @@ impl Visit for Data {
 
 impl<'a> Visit for FmtEvent<'a> {
     fn record_debug(&mut self, field: &Field, value: &dyn fmt::Debug) {
-        write!(
-            &mut self.stdout,
-            "{comma} ",
-            comma = if self.comma { "," } else { "" },
-        )
-        .unwrap();
+        let buf = &mut self.bufs.current_buf;
+        write!(buf, "{comma} ", comma = if self.comma { "," } else { "" },).unwrap();
         let name = field.name();
         if name == "message" {
-            write!(&mut self.stdout, "{:?}", value).unwrap();
+            write!(buf, "{:?}", value).unwrap();
             self.comma = true;
         } else {
-            write!(&mut self.stdout, "{}={:?}", name, value).unwrap();
+            write!(buf, "{}={:?}", name, value).unwrap();
             self.comma = true;
         }
+    }
+}
+
+impl<'a> FmtEvent<'a> {
+    fn finish(&mut self, indent: usize, indent_amount: usize) {
+        self.bufs.current_buf.push('\n');
+        self.bufs.indent_current(indent, indent_amount);
+        self.bufs.flush_indent_buf();
     }
 }
 
@@ -79,6 +124,18 @@ impl<'a> fmt::Display for ColorLevel<'a> {
     }
 }
 
+fn indent_block(block: &mut String, buf: &mut String, indent: usize, indent_amount: usize) {
+    let lines: Vec<_> = block.lines().collect();
+    let indent_spaces = indent * indent_amount;
+    buf.reserve(block.len() + (lines.len() * indent_spaces));
+    let indent_str = String::from(" ").repeat(indent_spaces);
+    for line in lines {
+        buf.push_str(&indent_str);
+        buf.push_str(line);
+        buf.push('\n');
+    }
+}
+
 impl HierarchicalLayer {
     pub fn new(indent_amount: usize) -> Self {
         let ansi = atty::is(atty::Stream::Stdout);
@@ -86,6 +143,7 @@ impl HierarchicalLayer {
             indent_amount,
             stdout: io::stdout(),
             ansi,
+            bufs: Mutex::new(Buffers::new()),
         }
     }
 
@@ -103,10 +161,10 @@ impl HierarchicalLayer {
 
     fn print_kvs<'a, I, K, V>(
         &self,
-        writer: &mut impl io::Write,
+        buf: &mut impl fmt::Write,
         kvs: I,
         leading: &str,
-    ) -> io::Result<()>
+    ) -> fmt::Result
     where
         I: IntoIterator<Item = (K, V)>,
         K: AsRef<str> + 'a,
@@ -114,30 +172,10 @@ impl HierarchicalLayer {
     {
         let mut kvs = kvs.into_iter();
         if let Some((k, v)) = kvs.next() {
-            write!(
-                writer,
-                "{}{}={}",
-                leading,
-                // Style::new().fg(Color::Purple).bold().paint(k.as_ref()),
-                k.as_ref(),
-                v
-            )?;
+            write!(buf, "{}{}={}", leading, k.as_ref(), v)?;
         }
         for (k, v) in kvs {
-            write!(
-                writer,
-                ", {}={}",
-                // Style::new().fg(Color::Purple).bold().paint(k.as_ref()),
-                k.as_ref(),
-                v
-            )?;
-        }
-        Ok(())
-    }
-
-    fn print_indent(&self, writer: &mut impl io::Write, indent: usize) -> io::Result<()> {
-        for _ in 0..(indent * self.indent_amount) {
-            write!(writer, " ")?;
+            write!(buf, ", {}={}", k.as_ref(), v)?;
         }
         Ok(())
     }
@@ -154,47 +192,53 @@ where
     }
 
     fn on_enter(&self, id: &tracing::Id, ctx: Context<S>) {
-        let mut stdout = self.stdout.lock();
         let span = ctx.span(&id).expect("in on_enter but span does not exist");
         let ext = span.extensions();
         let data = ext.get::<Data>().expect("span does not have data");
 
-        let indent = ctx.scope().collect::<Vec<_>>().len() - 1;
-        self.print_indent(&mut stdout, indent)
-            .expect("Unable to write to stdout");
+        let mut guard = self.bufs.lock().unwrap();
+        let bufs = &mut *guard;
+        let mut current_buf = &mut bufs.current_buf;
+
+        let indent = ctx.scope().count() - 1;
 
         write!(
-            &mut stdout,
+            current_buf,
             "{name}",
             name = self.styled(Style::new().fg(Color::Green).bold(), span.metadata().name())
         )
         .unwrap();
         write!(
-            &mut stdout,
+            current_buf,
             "{}",
             self.styled(Style::new().fg(Color::Green).bold(), "{") // Style::new().fg(Color::Green).dimmed().paint("{")
         )
         .unwrap();
-        self.print_kvs(&mut stdout, data.kvs.iter().map(|(k, v)| (k, v)), "")
+        self.print_kvs(&mut current_buf, data.kvs.iter().map(|(k, v)| (k, v)), "")
             .unwrap();
-        write!(
-            &mut stdout,
+        writeln!(
+            current_buf,
             "{}",
             self.styled(Style::new().fg(Color::Green).bold(), "}") // Style::new().dimmed().paint("}")
         )
         .unwrap();
-        writeln!(&mut stdout).unwrap();
+
+        bufs.indent_current(indent, self.indent_amount);
+        bufs.flush_indent_buf();
+        bufs.flush_current_buf(self.stdout.lock());
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
-        let mut stdout = self.stdout.lock();
+        let mut guard = self.bufs.lock().unwrap();
+        let mut bufs = &mut *guard;
+        let mut event_buf = &mut bufs.current_buf;
         // printing the indentation
-        if let Some(_) = ctx.current_span().id() {
+        let indent = if ctx.current_span().id().is_some() {
             // size hint isn't implemented on Scope.
-            let indent = ctx.scope().collect::<Vec<_>>().len();
-            self.print_indent(&mut stdout, indent)
-                .expect("Unable to write to stdout");
-        }
+            ctx.scope().count()
+        } else {
+            0
+        };
 
         // check if this event occurred in the context of a span.
         // if it has, get the start time of this span.
@@ -215,31 +259,32 @@ where
         let now = Local::now();
         if let Some(start) = start {
             let elapsed = now - start;
-            let level = event.metadata().level();
-            let level = if self.ansi {
-                ColorLevel(level).to_string()
-            } else {
-                level.to_string()
-            };
             write!(
-                &mut stdout,
-                "{timestamp}{unit} {level}",
+                &mut event_buf,
+                "{timestamp}{unit} ",
                 timestamp = self.styled(
                     Style::new().dimmed(),
                     elapsed.num_milliseconds().to_string()
                 ),
                 unit = self.styled(Style::new().dimmed(), "ms"),
-                level = level,
             )
-            .expect("Unable to write to stdout");
+            .expect("Unable to write to buffer");
         }
+        let level = event.metadata().level();
+        let level = if self.ansi {
+            ColorLevel(level).to_string()
+        } else {
+            level.to_string()
+        };
+        write!(&mut event_buf, "{level}", level = level).expect("Unable to write to buffer");
         let mut visitor = FmtEvent {
-            stdout,
             comma: false,
+            bufs: &mut bufs,
         };
         event.record(&mut visitor);
-        writeln!(&mut visitor.stdout).unwrap();
+        visitor.finish(indent, self.indent_amount);
+        bufs.flush_current_buf(self.stdout.lock());
     }
 
-    fn on_close(&self, _: Id, _: Context<S>) {}
+    fn on_close(&self, _id: Id, _ctx: Context<S>) {}
 }

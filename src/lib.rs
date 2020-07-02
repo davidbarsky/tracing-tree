@@ -22,9 +22,9 @@ const LINE_BRANCH: &str = "├";
 
 #[derive(Debug)]
 struct Config {
-    pub ansi: bool,
-    pub indent_lines: bool,
-    pub indent_amount: usize,
+    ansi: bool,
+    indent_lines: bool,
+    indent_amount: usize,
 }
 
 impl Config {

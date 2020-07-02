@@ -18,8 +18,7 @@ use tracing_subscriber::{
 
 const LINE_VERT: &str = "│";
 const LINE_HORIZ: &str = "─";
-const LINE_HORIZ_THICK: &str = "━";
-const LINE_BRANCH: &str = "┝";
+const LINE_BRANCH: &str = "├";
 
 #[derive(Debug)]
 struct Config {
@@ -81,14 +80,13 @@ impl Buffers {
         self.indent_buf.clear();
     }
 
-    fn indent_current(&mut self, indent: usize, config: &Config, is_span: bool) {
+    fn indent_current(&mut self, indent: usize, config: &Config) {
         indent_block(
             &mut self.current_buf,
             &mut self.indent_buf,
             indent,
             config.indent_amount,
             config.indent_lines,
-            is_span,
         );
         self.current_buf.clear();
     }
@@ -139,7 +137,7 @@ impl<'a> Visit for FmtEvent<'a> {
 impl<'a> FmtEvent<'a> {
     fn finish(&mut self, indent: usize, config: &Config) {
         self.bufs.current_buf.push('\n');
-        self.bufs.indent_current(indent, config, false);
+        self.bufs.indent_current(indent, config);
         self.bufs.flush_indent_buf();
     }
 }
@@ -159,13 +157,7 @@ impl<'a> fmt::Display for ColorLevel<'a> {
     }
 }
 
-fn indent_block_with_lines(
-    lines: &[&str],
-    buf: &mut String,
-    indent: usize,
-    indent_amount: usize,
-    is_span: bool,
-) {
+fn indent_block_with_lines(lines: &[&str], buf: &mut String, indent: usize, indent_amount: usize) {
     let indent_spaces = indent * indent_amount;
     if lines.len() == 0 {
         return;
@@ -188,19 +180,13 @@ fn indent_block_with_lines(
         }
     }
 
+    // draw branch
     buf.push_str(&s);
     buf.push_str(LINE_BRANCH);
 
-    // draw thicker horizontal lines for spans, to distinguish them visually
-    let horiz = if is_span {
-        LINE_HORIZ_THICK
-    } else {
-        LINE_HORIZ
-    };
-
     // add `indent_amount - 1` horizontal lines before the span/event
     for _ in 0..(indent_amount - 1) {
-        buf.push_str(horiz);
+        buf.push_str(LINE_HORIZ);
     }
     buf.push_str(&lines[0]);
     buf.push('\n');
@@ -229,13 +215,12 @@ fn indent_block(
     indent: usize,
     indent_amount: usize,
     indent_lines: bool,
-    is_span: bool,
 ) {
     let lines: Vec<&str> = block.lines().collect();
     let indent_spaces = indent * indent_amount;
     buf.reserve(block.len() + (lines.len() * indent_spaces));
     if indent_lines {
-        indent_block_with_lines(&lines, buf, indent, indent_amount, is_span);
+        indent_block_with_lines(&lines, buf, indent, indent_amount);
     } else {
         let indent_str = String::from(" ").repeat(indent_spaces);
         for line in lines {
@@ -347,7 +332,7 @@ where
         )
         .unwrap();
 
-        bufs.indent_current(indent, &self.config, true);
+        bufs.indent_current(indent, &self.config);
         bufs.flush_indent_buf();
         bufs.flush_current_buf(self.stdout.lock());
     }

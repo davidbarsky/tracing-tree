@@ -4,7 +4,6 @@ use ansi_term::{Color, Style};
 use chrono::{DateTime, Local};
 use format::{Buffers, ColorLevel, Config, FmtEvent};
 use std::{
-    default::Default,
     fmt::{self, Write as _},
     io,
     sync::Mutex,
@@ -87,7 +86,7 @@ impl HierarchicalLayer<fn() -> io::Stdout> {
 
 impl<W> HierarchicalLayer<W>
 where
-    W: MakeWriter,
+    W: MakeWriter + 'static,
 {
     pub fn with_ansi(self, ansi: bool) -> Self {
         Self {

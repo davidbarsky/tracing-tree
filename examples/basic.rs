@@ -3,7 +3,11 @@ use tracing_subscriber::{layer::SubscriberExt, registry::Registry};
 use tracing_tree::HierarchicalLayer;
 
 fn main() {
-    let subscriber = Registry::default().with(HierarchicalLayer::new(2).with_indent_lines(true));
+    let layer = HierarchicalLayer::default()
+        .with_indent_lines(true)
+        .with_indent_amount(2);
+
+    let subscriber = Registry::default().with(layer);
     tracing::subscriber::set_global_default(subscriber).unwrap();
 
     let app_span = span!(Level::TRACE, "hierarchical-example", version = %0.1);

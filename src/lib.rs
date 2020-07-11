@@ -69,6 +69,22 @@ impl Default for HierarchicalLayer {
     }
 }
 
+impl HierarchicalLayer<fn() -> io::Stdout> {
+    pub fn new(indent_amount: usize) -> Self {
+        let ansi = atty::is(atty::Stream::Stdout);
+        let config = Config {
+            ansi,
+            indent_amount,
+            ..Default::default()
+        };
+        Self {
+            make_writer: io::stdout,
+            bufs: Mutex::new(Buffers::new()),
+            config,
+        }
+    }
+}
+
 impl<W> HierarchicalLayer<W>
 where
     W: MakeWriter,

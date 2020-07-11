@@ -123,7 +123,7 @@ impl<'a> fmt::Display for ColorLevel<'a> {
 
 fn indent_block_with_lines(lines: &[&str], buf: &mut String, indent: usize, indent_amount: usize) {
     let indent_spaces = indent * indent_amount;
-    if lines.len() == 0 {
+    if lines.is_empty() {
         return;
     } else if indent_spaces == 0 {
         for line in lines {

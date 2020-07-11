@@ -20,7 +20,7 @@ use tracing_subscriber::{
     registry::LookupSpan,
 };
 
-pub struct Data {
+pub(crate) struct Data {
     start: DateTime<Local>,
     kvs: Vec<(&'static str, String)>,
 }

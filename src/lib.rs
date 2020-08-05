@@ -58,7 +58,6 @@ impl Default for HierarchicalLayer {
         let config = Config {
             ansi,
             indent_amount,
-            targets: false,
             ..Default::default()
         };
         Self {

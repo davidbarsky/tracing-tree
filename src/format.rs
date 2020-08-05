@@ -14,9 +14,14 @@ const LINE_BRANCH: &str = "├";
 
 #[derive(Debug)]
 pub struct Config {
+    /// Whether to use colors.
     pub ansi: bool,
+    /// Whether an ascii art tree is used or (if false) whether to just use whitespace indent
     pub indent_lines: bool,
+    /// The amount of chars to indent.
     pub indent_amount: usize,
+    /// Whether to show the module paths.
+    pub targets: bool,
 }
 
 impl Config {
@@ -30,6 +35,10 @@ impl Config {
             ..self
         }
     }
+
+    pub fn with_targets(self, targets: bool) -> Self {
+        Self { targets, ..self }
+    }
 }
 
 impl Default for Config {
@@ -38,6 +47,7 @@ impl Default for Config {
             ansi: true,
             indent_lines: false,
             indent_amount: 2,
+            targets: false,
         }
     }
 }

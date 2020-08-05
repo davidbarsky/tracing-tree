@@ -5,7 +5,8 @@ use tracing_tree::HierarchicalLayer;
 fn main() {
     let layer = HierarchicalLayer::default()
         .with_indent_lines(true)
-        .with_indent_amount(2);
+        .with_indent_amount(2)
+        .with_targets(true);
 
     let subscriber = Registry::default().with(layer);
     tracing::subscriber::set_global_default(subscriber).unwrap();

@@ -58,6 +58,7 @@ impl Default for HierarchicalLayer {
         let config = Config {
             ansi,
             indent_amount,
+            targets: false,
             ..Default::default()
         };
         Self {
@@ -88,6 +89,7 @@ impl<W> HierarchicalLayer<W>
 where
     W: MakeWriter + 'static,
 {
+    /// Enables terminal colors, boldness and italics.
     pub fn with_ansi(self, ansi: bool) -> Self {
         Self {
             config: self.config.with_ansi(ansi),
@@ -114,9 +116,19 @@ where
         Self { config, ..self }
     }
 
+    /// Renders an ascii art tree instead of just using whitespace indentation.
     pub fn with_indent_lines(self, indent_lines: bool) -> Self {
         Self {
             config: self.config.with_indent_lines(indent_lines),
+            ..self
+        }
+    }
+
+    /// Whether to render the event and span targets. Usually targets are the module path to the
+    /// event/span macro invocation.
+    pub fn with_targets(self, targets: bool) -> Self {
+        Self {
+            config: self.config.with_targets(targets),
             ..self
         }
     }
@@ -172,6 +184,16 @@ where
         let mut current_buf = &mut bufs.current_buf;
 
         let indent = ctx.scope().count().saturating_sub(1);
+
+        if self.config.targets {
+            let target = span.metadata().target();
+            write!(
+                &mut current_buf,
+                "{}::",
+                self.styled(Style::new().dimmed(), target,),
+            )
+            .expect("Unable to write to buffer");
+        }
 
         write!(
             current_buf,
@@ -249,6 +271,17 @@ where
             level.to_string()
         };
         write!(&mut event_buf, "{level}", level = level).expect("Unable to write to buffer");
+
+        if self.config.targets {
+            let target = event.metadata().target();
+            write!(
+                &mut event_buf,
+                " {}",
+                self.styled(Style::new().dimmed(), target,),
+            )
+            .expect("Unable to write to buffer");
+        }
+
         let mut visitor = FmtEvent {
             comma: false,
             bufs: &mut bufs,

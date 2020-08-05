@@ -209,7 +209,7 @@ where
         .unwrap();
         self.print_kvs(&mut current_buf, data.kvs.iter().map(|(k, v)| (k, v)), "")
             .unwrap();
-        writeln!(
+        write!(
             current_buf,
             "{}",
             self.styled(Style::new().fg(Color::Green).bold(), "}") // Style::new().dimmed().paint("}")
@@ -217,7 +217,6 @@ where
         .unwrap();
 
         bufs.indent_current(indent, &self.config);
-        bufs.flush_indent_buf();
         let writer = self.make_writer.make_writer();
         bufs.flush_current_buf(writer)
     }
@@ -287,7 +286,7 @@ where
             bufs: &mut bufs,
         };
         event.record(&mut visitor);
-        visitor.finish(indent, &self.config);
+        visitor.bufs.indent_current(indent, &self.config);
         let writer = self.make_writer.make_writer();
         bufs.flush_current_buf(writer)
     }

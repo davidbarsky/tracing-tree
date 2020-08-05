@@ -77,6 +77,7 @@ impl Buffers {
     }
 
     pub fn indent_current(&mut self, indent: usize, config: &Config) {
+        self.current_buf.push('\n');
         indent_block(
             &mut self.current_buf,
             &mut self.indent_buf,
@@ -85,6 +86,7 @@ impl Buffers {
             config.indent_lines,
         );
         self.current_buf.clear();
+        self.flush_indent_buf();
     }
 }
 
@@ -105,14 +107,6 @@ impl<'a> Visit for FmtEvent<'a> {
             write!(buf, "{}={:?}", name, value).unwrap();
             self.comma = true;
         }
-    }
-}
-
-impl<'a> FmtEvent<'a> {
-    pub fn finish(&mut self, indent: usize, config: &Config) {
-        self.bufs.current_buf.push('\n');
-        self.bufs.indent_current(indent, config);
-        self.bufs.flush_indent_buf();
     }
 }
 

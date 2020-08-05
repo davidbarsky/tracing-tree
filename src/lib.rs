@@ -190,10 +190,7 @@ where
             write!(
                 &mut current_buf,
                 "{}::",
-                self.styled(
-                    Style::new().dimmed(),
-                    target,
-                ),
+                self.styled(Style::new().dimmed(), target,),
             )
             .expect("Unable to write to buffer");
         }
@@ -280,10 +277,7 @@ where
             write!(
                 &mut event_buf,
                 " {}",
-                self.styled(
-                    Style::new().dimmed(),
-                    target,
-                ),
+                self.styled(Style::new().dimmed(), target,),
             )
             .expect("Unable to write to buffer");
         }

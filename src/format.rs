@@ -37,10 +37,7 @@ impl Config {
     }
 
     pub fn with_targets(self, targets: bool) -> Self {
-        Self {
-            targets,
-            ..self
-        }
+        Self { targets, ..self }
     }
 }
 

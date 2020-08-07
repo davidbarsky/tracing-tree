@@ -139,6 +139,16 @@ where
         }
     }
 
+    /// Resets the indentation to zero after `wraparound` indentation levels.
+    /// This is helpful if you expect very deeply nested spans as otherwise the indentation
+    /// just runs out of your screen.
+    pub fn with_wraparound(self, wraparound: usize) -> Self {
+        Self {
+            config: self.config.with_wraparound(wraparound),
+            ..self
+        }
+    }
+
     fn styled(&self, style: Style, text: impl AsRef<str>) -> String {
         if self.config.ansi {
             style.paint(text.as_ref()).to_string()

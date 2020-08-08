@@ -22,6 +22,10 @@ pub struct Config {
     pub indent_amount: usize,
     /// Whether to show the module paths.
     pub targets: bool,
+    /// Whether to show thread ids.
+    pub render_thread_ids: bool,
+    /// Whether to show thread names.
+    pub render_thread_names: bool,
 }
 
 impl Config {
@@ -39,6 +43,42 @@ impl Config {
     pub fn with_targets(self, targets: bool) -> Self {
         Self { targets, ..self }
     }
+
+    pub fn with_thread_ids(self, render_thread_ids: bool) -> Self {
+        Self {
+            render_thread_ids,
+            ..self
+        }
+    }
+
+    pub fn with_thread_names(self, render_thread_names: bool) -> Self {
+        Self {
+            render_thread_names,
+            ..self
+        }
+    }
+
+    pub(crate) fn prefix(&self) -> String {
+        let mut buf = String::new();
+        if self.render_thread_ids {
+            write!(buf, "{:?}", std::thread::current().id()).unwrap();
+            if buf.ends_with(')') {
+                buf.truncate(buf.len() - 1);
+            }
+            if buf.starts_with("ThreadId(") {
+                buf.drain(0.."ThreadId(".len());
+            }
+        }
+        if self.render_thread_names {
+            if let Some(name) = std::thread::current().name() {
+                if self.render_thread_ids {
+                    buf.push(':');
+                }
+                buf.push_str(name);
+            }
+        }
+        buf
+    }
 }
 
 impl Default for Config {
@@ -48,6 +88,8 @@ impl Default for Config {
             indent_lines: false,
             indent_amount: 2,
             targets: false,
+            render_thread_ids: false,
+            render_thread_names: false,
         }
     }
 }
@@ -77,14 +119,17 @@ impl Buffers {
     }
 
     pub fn indent_current(&mut self, indent: usize, config: &Config) {
+        self.current_buf.push('\n');
         indent_block(
             &mut self.current_buf,
             &mut self.indent_buf,
             indent,
             config.indent_amount,
             config.indent_lines,
+            &config.prefix(),
         );
         self.current_buf.clear();
+        self.flush_indent_buf();
     }
 }
 
@@ -108,14 +153,6 @@ impl<'a> Visit for FmtEvent<'a> {
     }
 }
 
-impl<'a> FmtEvent<'a> {
-    pub fn finish(&mut self, indent: usize, config: &Config) {
-        self.bufs.current_buf.push('\n');
-        self.bufs.indent_current(indent, config);
-        self.bufs.flush_indent_buf();
-    }
-}
-
 pub struct ColorLevel<'a>(pub &'a Level);
 
 impl<'a> fmt::Display for ColorLevel<'a> {
@@ -131,18 +168,26 @@ impl<'a> fmt::Display for ColorLevel<'a> {
     }
 }
 
-fn indent_block_with_lines(lines: &[&str], buf: &mut String, indent: usize, indent_amount: usize) {
+fn indent_block_with_lines(
+    lines: &[&str],
+    buf: &mut String,
+    indent: usize,
+    indent_amount: usize,
+    prefix: &str,
+) {
     let indent_spaces = indent * indent_amount;
     if lines.is_empty() {
         return;
     } else if indent_spaces == 0 {
         for line in lines {
+            buf.push_str(prefix);
             buf.push_str(line);
             buf.push('\n');
         }
         return;
     }
-    let mut s = String::with_capacity(indent_spaces);
+    let mut s = String::with_capacity(indent_spaces + prefix.len());
+    s.push_str(prefix);
 
     // instead of using all spaces to indent, draw a vertical line at every indent level
     // up until the last indent
@@ -189,15 +234,17 @@ fn indent_block(
     indent: usize,
     indent_amount: usize,
     indent_lines: bool,
+    prefix: &str,
 ) {
     let lines: Vec<&str> = block.lines().collect();
     let indent_spaces = indent * indent_amount;
     buf.reserve(block.len() + (lines.len() * indent_spaces));
     if indent_lines {
-        indent_block_with_lines(&lines, buf, indent, indent_amount);
+        indent_block_with_lines(&lines, buf, indent, indent_amount, prefix);
     } else {
         let indent_str = String::from(" ").repeat(indent_spaces);
         for line in lines {
+            buf.push_str(prefix);
             buf.push_str(&indent_str);
             buf.push_str(line);
             buf.push('\n');

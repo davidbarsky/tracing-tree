@@ -53,19 +53,7 @@ where
 
 impl Default for HierarchicalLayer {
     fn default() -> Self {
-        let ansi = atty::is(atty::Stream::Stdout);
-        let indent_amount = 2;
-        let config = Config {
-            ansi,
-            indent_amount,
-            targets: false,
-            ..Default::default()
-        };
-        Self {
-            make_writer: io::stdout,
-            bufs: Mutex::new(Buffers::new()),
-            config,
-        }
+        Self::new(2)
     }
 }
 
@@ -129,6 +117,24 @@ where
     pub fn with_targets(self, targets: bool) -> Self {
         Self {
             config: self.config.with_targets(targets),
+            ..self
+        }
+    }
+
+    /// Whether to render the thread id in the beginning of every line. This is helpful to
+    /// untangle the tracing statements emitted by each thread.
+    pub fn with_thread_ids(self, thread_ids: bool) -> Self {
+        Self {
+            config: self.config.with_thread_ids(thread_ids),
+            ..self
+        }
+    }
+
+    /// Whether to render the thread name in the beginning of every line. Not all threads have
+    /// names, but if they do, this may be more helpful than the generic thread ids.
+    pub fn with_thread_names(self, thread_names: bool) -> Self {
+        Self {
+            config: self.config.with_thread_names(thread_names),
             ..self
         }
     }
@@ -209,7 +215,7 @@ where
         .unwrap();
         self.print_kvs(&mut current_buf, data.kvs.iter().map(|(k, v)| (k, v)), "")
             .unwrap();
-        writeln!(
+        write!(
             current_buf,
             "{}",
             self.styled(Style::new().fg(Color::Green).bold(), "}") // Style::new().dimmed().paint("}")
@@ -217,7 +223,6 @@ where
         .unwrap();
 
         bufs.indent_current(indent, &self.config);
-        bufs.flush_indent_buf();
         let writer = self.make_writer.make_writer();
         bufs.flush_current_buf(writer)
     }
@@ -226,6 +231,7 @@ where
         let mut guard = self.bufs.lock().unwrap();
         let mut bufs = &mut *guard;
         let mut event_buf = &mut bufs.current_buf;
+
         // printing the indentation
         let indent = if ctx.current_span().id().is_some() {
             // size hint isn't implemented on Scope.
@@ -287,7 +293,7 @@ where
             bufs: &mut bufs,
         };
         event.record(&mut visitor);
-        visitor.finish(indent, &self.config);
+        visitor.bufs.indent_current(indent, &self.config);
         let writer = self.make_writer.make_writer();
         bufs.flush_current_buf(writer)
     }

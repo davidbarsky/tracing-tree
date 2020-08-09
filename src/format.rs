@@ -26,6 +26,8 @@ pub struct Config {
     pub render_thread_ids: bool,
     /// Whether to show thread names.
     pub render_thread_names: bool,
+    /// Specifies after how many indentation levels we will wrap back around to zero
+    pub wraparound: usize,
 }
 
 impl Config {
@@ -56,6 +58,10 @@ impl Config {
             render_thread_names,
             ..self
         }
+    }
+
+    pub fn with_wraparound(self, wraparound: usize) -> Self {
+        Self { wraparound, ..self }
     }
 
     pub(crate) fn prefix(&self) -> String {
@@ -90,6 +96,7 @@ impl Default for Config {
             targets: false,
             render_thread_ids: false,
             render_thread_names: false,
+            wraparound: usize::max_value(),
         }
     }
 }
@@ -123,7 +130,7 @@ impl Buffers {
         indent_block(
             &mut self.current_buf,
             &mut self.indent_buf,
-            indent,
+            indent % config.wraparound,
             config.indent_amount,
             config.indent_lines,
             &config.prefix(),

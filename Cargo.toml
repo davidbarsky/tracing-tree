@@ -1,14 +1,12 @@
 [package]
 name = "tracing-tree"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["David Barsky <me@davidbarsky.com>", "Nathan Whitaker"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
-description = "a tracing layer that represents prints a heirarchal tree of spans and events."
+description = "A Tracing Layer which prints a tree of spans and events."
 repository = "https://github.com/davidbarsky/tracing-tree"
 readme = "README.md"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 tracing = "0.1"

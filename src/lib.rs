@@ -149,6 +149,26 @@ where
         }
     }
 
+    /// Whether to print the currently active span's message again before entering a new span.
+    /// This helps if the entry to the current span was quite a while back (and with scrolling
+    /// upwards in logs).
+    pub fn with_verbose_entry(self, verbose_entry: bool) -> Self {
+        Self {
+            config: self.config.with_verbose_entry(verbose_entry),
+            ..self
+        }
+    }
+
+    /// Whether to print the currently active span's message again before dropping it.
+    /// This helps if the entry to the current span was quite a while back (and with scrolling
+    /// upwards in logs).
+    pub fn with_verbose_exit(self, verbose_exit: bool) -> Self {
+        Self {
+            config: self.config.with_verbose_exit(verbose_exit),
+            ..self
+        }
+    }
+
     fn styled(&self, style: Style, text: impl AsRef<str>) -> String {
         if self.config.ansi {
             style.paint(text.as_ref()).to_string()
@@ -177,21 +197,16 @@ where
         }
         Ok(())
     }
-}
 
-impl<S, W> Layer<S> for HierarchicalLayer<W>
-where
-    S: Subscriber + for<'span> LookupSpan<'span> + fmt::Debug,
-    W: MakeWriter + 'static,
-{
-    fn new_span(&self, attrs: &Attributes, id: &Id, ctx: Context<S>) {
-        let data = Data::new(attrs);
-        let span = ctx.span(id).expect("in new_span but span does not exist");
-        span.extensions_mut().insert(data);
-    }
-
-    fn on_enter(&self, id: &tracing::Id, ctx: Context<S>) {
-        let span = ctx.span(&id).expect("in on_enter but span does not exist");
+    fn write_span_info<S: Subscriber + for<'span> LookupSpan<'span> + fmt::Debug>(
+        &self,
+        id: &tracing::Id,
+        ctx: Context<S>,
+        entering: bool,
+    ) {
+        let span = ctx
+            .span(&id)
+            .expect("in on_enter/on_exit but span does not exist");
         let ext = span.extensions();
         let data = ext.get::<Data>().expect("span does not have data");
 
@@ -199,13 +214,28 @@ where
         let bufs = &mut *guard;
         let mut current_buf = &mut bufs.current_buf;
 
-        let indent = ctx.scope().count().saturating_sub(1);
+        let indent = ctx.scope().count();
+        let indent = if entering {
+            indent.saturating_sub(1)
+        } else {
+            indent
+        };
 
         if self.config.targets {
             let target = span.metadata().target();
+            let line_style = if self.config.indent_lines {
+                if entering {
+                    format::LINE_OPEN
+                } else {
+                    format::LINE_CLOSE
+                }
+            } else {
+                ""
+            };
             write!(
                 &mut current_buf,
-                "{}::",
+                "{}{}::",
+                line_style,
                 self.styled(Style::new().dimmed(), target,),
             )
             .expect("Unable to write to buffer");
@@ -235,6 +265,22 @@ where
         bufs.indent_current(indent, &self.config);
         let writer = self.make_writer.make_writer();
         bufs.flush_current_buf(writer)
+    }
+}
+
+impl<S, W> Layer<S> for HierarchicalLayer<W>
+where
+    S: Subscriber + for<'span> LookupSpan<'span> + fmt::Debug,
+    W: MakeWriter + 'static,
+{
+    fn new_span(&self, attrs: &Attributes, id: &Id, ctx: Context<S>) {
+        let data = Data::new(attrs);
+        let span = ctx.span(id).expect("in new_span but span does not exist");
+        span.extensions_mut().insert(data);
+    }
+
+    fn on_enter(&self, id: &tracing::Id, ctx: Context<S>) {
+        self.write_span_info(id, ctx, true);
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
@@ -308,5 +354,9 @@ where
         bufs.flush_current_buf(writer)
     }
 
-    fn on_exit(&self, _id: &Id, _ctx: Context<S>) {}
+    fn on_exit(&self, id: &Id, ctx: Context<S>) {
+        if self.config.verbose_exit {
+            self.write_span_info(id, ctx, false);
+        }
+    }
 }

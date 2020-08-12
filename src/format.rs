@@ -11,6 +11,8 @@ use tracing::{
 const LINE_VERT: &str = "│";
 const LINE_HORIZ: &str = "─";
 const LINE_BRANCH: &str = "├";
+pub(crate) const LINE_CLOSE: &str = "┘";
+pub(crate) const LINE_OPEN: &str = "┐";
 
 #[derive(Debug)]
 pub struct Config {
@@ -28,6 +30,10 @@ pub struct Config {
     pub render_thread_names: bool,
     /// Specifies after how many indentation levels we will wrap back around to zero
     pub wraparound: usize,
+    /// Whether to print the current span before activating a new one
+    pub verbose_entry: bool,
+    /// Whether to print the current span before exiting it.
+    pub verbose_exit: bool,
 }
 
 impl Config {
@@ -64,6 +70,20 @@ impl Config {
         Self { wraparound, ..self }
     }
 
+    pub fn with_verbose_entry(self, verbose_entry: bool) -> Self {
+        Self {
+            verbose_entry,
+            ..self
+        }
+    }
+
+    pub fn with_verbose_exit(self, verbose_exit: bool) -> Self {
+        Self {
+            verbose_exit,
+            ..self
+        }
+    }
+
     pub(crate) fn prefix(&self) -> String {
         let mut buf = String::new();
         if self.render_thread_ids {
@@ -97,6 +117,8 @@ impl Default for Config {
             render_thread_ids: false,
             render_thread_names: false,
             wraparound: usize::max_value(),
+            verbose_entry: false,
+            verbose_exit: false,
         }
     }
 }

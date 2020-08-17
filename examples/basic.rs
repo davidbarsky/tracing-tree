@@ -9,6 +9,7 @@ fn main() {
         .with_thread_names(true)
         .with_thread_ids(true)
         .with_verbose_exit(true)
+        .with_verbose_entry(true)
         .with_targets(true);
 
     let subscriber = Registry::default().with(layer);

@@ -2,7 +2,7 @@ pub(crate) mod format;
 
 use ansi_term::{Color, Style};
 use chrono::{DateTime, Local};
-use format::{Buffers, ColorLevel, Config, FmtEvent};
+use format::{Buffers, ColorLevel, Config, FmtEvent, SpanMode};
 use std::{
     fmt::{self, Write as _},
     io,
@@ -201,8 +201,9 @@ where
     fn write_span_info<S: Subscriber + for<'span> LookupSpan<'span> + fmt::Debug>(
         &self,
         id: &tracing::Id,
-        ctx: Context<S>,
+        ctx: &Context<S>,
         entering: bool,
+        style: SpanMode,
     ) {
         let span = ctx
             .span(&id)
@@ -223,19 +224,9 @@ where
 
         if self.config.targets {
             let target = span.metadata().target();
-            let line_style = if self.config.indent_lines {
-                if entering {
-                    format::LINE_OPEN
-                } else {
-                    format::LINE_CLOSE
-                }
-            } else {
-                ""
-            };
             write!(
                 &mut current_buf,
-                "{}{}::",
-                line_style,
+                "{}::",
                 self.styled(Style::new().dimmed(), target,),
             )
             .expect("Unable to write to buffer");
@@ -262,7 +253,7 @@ where
         )
         .unwrap();
 
-        bufs.indent_current(indent, &self.config);
+        bufs.indent_current(indent, &self.config, style);
         let writer = self.make_writer.make_writer();
         bufs.flush_current_buf(writer)
     }
@@ -280,7 +271,28 @@ where
     }
 
     fn on_enter(&self, id: &tracing::Id, ctx: Context<S>) {
-        self.write_span_info(id, ctx, true);
+        let mut iter = ctx.scope();
+        let mut prev = iter.next();
+        let mut cur = iter.next();
+        loop {
+            match (prev, cur) {
+                (Some(span), Some(cur_elem)) => {
+                    if let Some(next) = iter.next() {
+                        prev = Some(cur_elem);
+                        cur = Some(next);
+                    } else {
+                        self.write_span_info(&span.id(), &ctx, false, SpanMode::PreOpen);
+                        break;
+                    }
+                }
+                // Iterator is not sealed, so we need to catch this case.
+                (None, Some(_)) => break,
+                // Just the new span on the stack
+                (Some(_), None) => break,
+                (None, None) => unreachable!("just entered span must exist"),
+            }
+        }
+        self.write_span_info(id, &ctx, false, SpanMode::Open);
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
@@ -349,14 +361,19 @@ where
             bufs: &mut bufs,
         };
         event.record(&mut visitor);
-        visitor.bufs.indent_current(indent, &self.config);
+        visitor
+            .bufs
+            .indent_current(indent, &self.config, SpanMode::Event);
         let writer = self.make_writer.make_writer();
         bufs.flush_current_buf(writer)
     }
 
     fn on_exit(&self, id: &Id, ctx: Context<S>) {
         if self.config.verbose_exit {
-            self.write_span_info(id, ctx, false);
+            self.write_span_info(id, &ctx, false, SpanMode::Close);
+            if let Some(span) = ctx.scope().last() {
+                self.write_span_info(&span.id(), &ctx, false, SpanMode::PostClose);
+            }
         }
     }
 }

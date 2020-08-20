@@ -1,35 +1,35 @@
 1:mainbasic::hierarchical-example{version=0.1}
 1:main├┐basic::hierarchical-example{version=0.1}
 1:main│└┐basic::server{host="localhost", port=8080}
-1:main│ ├─0ms INFO basic starting
-1:main│ ├─300ms INFO basic listening
+1:main│ ├─ms INFO basic starting
+1:main│ ├─ms INFO basic listening
 1:main│ ├┐basic::server{host="localhost", port=8080}
 1:main│ │└┐basic::conn{peer_addr="82.9.9.9", port=42381}
-1:main│ │ ├─0ms DEBUG basic connected
-1:main│ │ ├─300ms DEBUG basic message received, length=2
+1:main│ │ ├─ms DEBUG basic connected
+1:main│ │ ├─ms DEBUG basic message received, length=2
 1:main│ │┌┘basic::conn{peer_addr="82.9.9.9", port=42381}
 1:main│ ├┘basic::server{host="localhost", port=8080}
 1:main│ ├┐basic::server{host="localhost", port=8080}
 1:main│ │└┐basic::conn{peer_addr="8.8.8.8", port=18230}
-1:main│ │ ├─300ms DEBUG basic connected
+1:main│ │ ├─ms DEBUG basic connected
 1:main│ │┌┘basic::conn{peer_addr="8.8.8.8", port=18230}
 1:main│ ├┘basic::server{host="localhost", port=8080}
 1:main│ ├┐basic::server{host="localhost", port=8080}
 1:main│ │└┐basic::conn{peer_addr="82.9.9.9", port=42381}
-1:main│ │ ├─601ms WARN basic weak encryption requested, algo="xor"
-1:main│ │ ├─901ms DEBUG basic response sent, length=8
-1:main│ │ ├─901ms DEBUG basic disconnected
+1:main│ │ ├─ms WARN basic weak encryption requested, algo="xor"
+1:main│ │ ├─ms DEBUG basic response sent, length=8
+1:main│ │ ├─ms DEBUG basic disconnected
 1:main│ │┌┘basic::conn{peer_addr="82.9.9.9", port=42381}
 1:main│ ├┘basic::server{host="localhost", port=8080}
 1:main│ ├┐basic::server{host="localhost", port=8080}
 1:main│ │└┐basic::conn{peer_addr="8.8.8.8", port=18230}
-1:main│ │ ├─601ms DEBUG basic message received, length=5
-1:main│ │ ├─901ms DEBUG basic response sent, length=8
-1:main│ │ ├─901ms DEBUG basic disconnected
+1:main│ │ ├─ms DEBUG basic message received, length=5
+1:main│ │ ├─ms DEBUG basic response sent, length=8
+1:main│ │ ├─ms DEBUG basic disconnected
 1:main│ │┌┘basic::conn{peer_addr="8.8.8.8", port=18230}
 1:main│ ├┘basic::server{host="localhost", port=8080}
-1:main│ ├─1503ms WARN basic internal error
-1:main│ ├─1503ms INFO basic exit
+1:main│ ├─ms WARN basic internal error
+1:main│ ├─ms INFO basic exit
 1:main│┌┘basic::server{host="localhost", port=8080}
 1:main├┘basic::hierarchical-example{version=0.1}
 1:mainbasic::hierarchical-example{version=0.1}

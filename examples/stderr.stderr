@@ -1,110 +1,110 @@
 fibonacci_seq{to=5}
-├─0ms DEBUG Pushing 0 fibonacci
+├─ms DEBUG Pushing 0 fibonacci
 ├┐fibonacci_seq{to=5}
 │└┐nth_fibonacci{n=0}
-│ ├─0ms DEBUG Base case
-├─0ms DEBUG Pushing 1 fibonacci
+│ ├─ms DEBUG Base case
+├─ms DEBUG Pushing 1 fibonacci
 ├┐fibonacci_seq{to=5}
 │└┐nth_fibonacci{n=1}
-│ ├─0ms DEBUG Base case
-├─0ms DEBUG Pushing 2 fibonacci
+│ ├─ms DEBUG Base case
+├─ms DEBUG Pushing 2 fibonacci
 ├┐fibonacci_seq{to=5}
 │└┐nth_fibonacci{n=2}
-│ ├─0ms DEBUG Recursing
+│ ├─ms DEBUG Recursing
 │ ├┐nth_fibonacci{n=2}
 │ │└┐nth_fibonacci{n=1}
-│ │ ├─0ms DEBUG Base case
+│ │ ├─ms DEBUG Base case
 │ ├┐nth_fibonacci{n=2}
 │ │└┐nth_fibonacci{n=0}
-│ │ ├─0ms DEBUG Base case
-├─1ms DEBUG Pushing 3 fibonacci
+│ │ ├─ms DEBUG Base case
+├─ms DEBUG Pushing 3 fibonacci
 ├┐fibonacci_seq{to=5}
 │└┐nth_fibonacci{n=3}
-│ ├─0ms DEBUG Recursing
+│ ├─ms DEBUG Recursing
 │ ├┐nth_fibonacci{n=3}
 │ │└┐nth_fibonacci{n=2}
-│ │ ├─0ms DEBUG Recursing
+│ │ ├─ms DEBUG Recursing
 │ │ ├┐nth_fibonacci{n=2}
 │ │ │└┐nth_fibonacci{n=1}
-│ │ │ ├─0ms DEBUG Base case
+│ │ │ ├─ms DEBUG Base case
 │ │ ├┐nth_fibonacci{n=2}
 │ │ │└┐nth_fibonacci{n=0}
-│ │ │ ├─0ms DEBUG Base case
+│ │ │ ├─ms DEBUG Base case
 │ ├┐nth_fibonacci{n=3}
 │ │└┐nth_fibonacci{n=1}
-│ │ ├─0ms DEBUG Base case
-├─2ms DEBUG Pushing 4 fibonacci
+│ │ ├─ms DEBUG Base case
+├─ms DEBUG Pushing 4 fibonacci
 ├┐fibonacci_seq{to=5}
 │└┐nth_fibonacci{n=4}
-│ ├─0ms DEBUG Recursing
+│ ├─ms DEBUG Recursing
 │ ├┐nth_fibonacci{n=4}
 │ │└┐nth_fibonacci{n=3}
-│ │ ├─0ms DEBUG Recursing
+│ │ ├─ms DEBUG Recursing
 │ │ ├┐nth_fibonacci{n=3}
 │ │ │└┐nth_fibonacci{n=2}
-│ │ │ ├─0ms DEBUG Recursing
+│ │ │ ├─ms DEBUG Recursing
 │ │ │ ├┐nth_fibonacci{n=2}
 │ │ │ │└┐nth_fibonacci{n=1}
-│ │ │ │ ├─0ms DEBUG Base case
+│ │ │ │ ├─ms DEBUG Base case
 │ │ │ ├┐nth_fibonacci{n=2}
 │ │ │ │└┐nth_fibonacci{n=0}
-│ │ │ │ ├─0ms DEBUG Base case
+│ │ │ │ ├─ms DEBUG Base case
 │ │ ├┐nth_fibonacci{n=3}
 │ │ │└┐nth_fibonacci{n=1}
-│ │ │ ├─0ms DEBUG Base case
+│ │ │ ├─ms DEBUG Base case
 │ ├┐nth_fibonacci{n=4}
 │ │└┐nth_fibonacci{n=2}
-│ │ ├─0ms DEBUG Recursing
+│ │ ├─ms DEBUG Recursing
 │ │ ├┐nth_fibonacci{n=2}
 │ │ │└┐nth_fibonacci{n=1}
-│ │ │ ├─0ms DEBUG Base case
+│ │ │ ├─ms DEBUG Base case
 │ │ ├┐nth_fibonacci{n=2}
 │ │ │└┐nth_fibonacci{n=0}
-│ │ │ ├─0ms DEBUG Base case
-├─4ms DEBUG Pushing 5 fibonacci
+│ │ │ ├─ms DEBUG Base case
+├─ms DEBUG Pushing 5 fibonacci
 ├┐fibonacci_seq{to=5}
 │└┐nth_fibonacci{n=5}
-│ ├─0ms DEBUG Recursing
+│ ├─ms DEBUG Recursing
 │ ├┐nth_fibonacci{n=5}
 │ │└┐nth_fibonacci{n=4}
-│ │ ├─0ms DEBUG Recursing
+│ │ ├─ms DEBUG Recursing
 │ │ ├┐nth_fibonacci{n=4}
 │ │ │└┐nth_fibonacci{n=3}
-│ │ │ ├─0ms DEBUG Recursing
+│ │ │ ├─ms DEBUG Recursing
 │ │ │ ├┐nth_fibonacci{n=3}
 │ │ │ │└┐nth_fibonacci{n=2}
-│ │ │ │ ├─0ms DEBUG Recursing
+│ │ │ │ ├─ms DEBUG Recursing
 │ │ │ │ ├┐nth_fibonacci{n=2}
 │ │ │ │ │└┐nth_fibonacci{n=1}
-│ │ │ │ │ ├─0ms DEBUG Base case
+│ │ │ │ │ ├─ms DEBUG Base case
 │ │ │ │ ├┐nth_fibonacci{n=2}
 │ │ │ │ │└┐nth_fibonacci{n=0}
-│ │ │ │ │ ├─0ms DEBUG Base case
+│ │ │ │ │ ├─ms DEBUG Base case
 │ │ │ ├┐nth_fibonacci{n=3}
 │ │ │ │└┐nth_fibonacci{n=1}
-│ │ │ │ ├─0ms DEBUG Base case
+│ │ │ │ ├─ms DEBUG Base case
 │ │ ├┐nth_fibonacci{n=4}
 │ │ │└┐nth_fibonacci{n=2}
-│ │ │ ├─0ms DEBUG Recursing
+│ │ │ ├─ms DEBUG Recursing
 │ │ │ ├┐nth_fibonacci{n=2}
 │ │ │ │└┐nth_fibonacci{n=1}
-│ │ │ │ ├─0ms DEBUG Base case
+│ │ │ │ ├─ms DEBUG Base case
 │ │ │ ├┐nth_fibonacci{n=2}
 │ │ │ │└┐nth_fibonacci{n=0}
-│ │ │ │ ├─0ms DEBUG Base case
+│ │ │ │ ├─ms DEBUG Base case
 │ ├┐nth_fibonacci{n=5}
 │ │└┐nth_fibonacci{n=3}
-│ │ ├─0ms DEBUG Recursing
+│ │ ├─ms DEBUG Recursing
 │ │ ├┐nth_fibonacci{n=3}
 │ │ │└┐nth_fibonacci{n=2}
-│ │ │ ├─0ms DEBUG Recursing
+│ │ │ ├─ms DEBUG Recursing
 │ │ │ ├┐nth_fibonacci{n=2}
 │ │ │ │└┐nth_fibonacci{n=1}
-│ │ │ │ ├─0ms DEBUG Base case
+│ │ │ │ ├─ms DEBUG Base case
 │ │ │ ├┐nth_fibonacci{n=2}
 │ │ │ │└┐nth_fibonacci{n=0}
-│ │ │ │ ├─0ms DEBUG Base case
+│ │ │ │ ├─ms DEBUG Base case
 │ │ ├┐nth_fibonacci{n=3}
 │ │ │└┐nth_fibonacci{n=1}
-│ │ │ ├─0ms DEBUG Base case
+│ │ │ ├─ms DEBUG Base case
 INFO The first 5 fibonacci numbers are [1, 1, 2, 3, 5, 8]

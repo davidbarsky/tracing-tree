@@ -29,6 +29,7 @@ fn main() {
     let layer = HierarchicalLayer::default()
         .with_indent_lines(true)
         .with_indent_amount(2)
+        .with_bracketed_fields(true)
         .with_writer(std::io::stderr);
 
     let subscriber = Registry::default().with(layer);

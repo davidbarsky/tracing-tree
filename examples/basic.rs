@@ -1,4 +1,4 @@
-use tracing::{debug, info, instrument, span, warn, Level};
+use tracing::{debug, error, info, instrument, span, warn, Level};
 use tracing_subscriber::{layer::SubscriberExt, registry::Registry};
 use tracing_tree::HierarchicalLayer;
 
@@ -33,6 +33,16 @@ fn main() {
     peer2.in_scope(|| {
         std::thread::sleep(std::time::Duration::from_millis(300));
         debug!("connected");
+    });
+    let peer3 = span!(
+        Level::TRACE,
+        "foomp",
+        normal_var = 43,
+        "{} <- format string",
+        42
+    );
+    peer3.in_scope(|| {
+        error!("hello");
     });
     peer1.in_scope(|| {
         warn!(algo = "xor", "weak encryption requested");

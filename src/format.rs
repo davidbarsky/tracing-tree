@@ -42,6 +42,8 @@ pub struct Config {
     pub verbose_entry: bool,
     /// Whether to print the current span before exiting it.
     pub verbose_exit: bool,
+    /// Whether to print squiggly brackets (`{}`) around the list of fields in a span.
+    pub bracketed_fields: bool,
 }
 
 impl Config {
@@ -92,6 +94,13 @@ impl Config {
         }
     }
 
+    pub fn with_bracketed_fields(self, bracketed_fields: bool) -> Self {
+        Self {
+            bracketed_fields,
+            ..self
+        }
+    }
+
     pub(crate) fn prefix(&self) -> String {
         let mut buf = String::new();
         if self.render_thread_ids {
@@ -127,6 +136,7 @@ impl Default for Config {
             wraparound: usize::max_value(),
             verbose_entry: false,
             verbose_exit: false,
+            bracketed_fields: false,
         }
     }
 }

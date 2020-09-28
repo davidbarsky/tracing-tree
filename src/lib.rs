@@ -169,6 +169,15 @@ where
         }
     }
 
+    /// Whether to print `{}` around the fields when printing a span.
+    /// This can help visually distinguish fields from the rest of the message.
+    pub fn with_bracketed_fields(self, bracketed_fields: bool) -> Self {
+        Self {
+            config: self.config.with_bracketed_fields(bracketed_fields),
+            ..self
+        }
+    }
+
     fn styled(&self, style: Style, text: impl AsRef<str>) -> String {
         if self.config.ansi {
             style.paint(text.as_ref()).to_string()
@@ -177,23 +186,21 @@ where
         }
     }
 
-    fn print_kvs<'a, I, K, V>(
-        &self,
-        buf: &mut impl fmt::Write,
-        kvs: I,
-        leading: &str,
-    ) -> fmt::Result
+    fn print_kvs<'a, I, V>(&self, buf: &mut impl fmt::Write, kvs: I) -> fmt::Result
     where
-        I: IntoIterator<Item = (K, V)>,
-        K: AsRef<str> + 'a,
+        I: IntoIterator<Item = (&'a str, V)>,
         V: fmt::Display + 'a,
     {
         let mut kvs = kvs.into_iter();
         if let Some((k, v)) = kvs.next() {
-            write!(buf, "{}{}={}", leading, k.as_ref(), v)?;
+            if k == "message" {
+                write!(buf, "{}", v)?;
+            } else {
+                write!(buf, "{}={}", k, v)?;
+            }
         }
         for (k, v) in kvs {
-            write!(buf, ", {}={}", k.as_ref(), v)?;
+            write!(buf, ", {}={}", k, v)?;
         }
         Ok(())
     }
@@ -238,20 +245,26 @@ where
             name = self.styled(Style::new().fg(Color::Green).bold(), span.metadata().name())
         )
         .unwrap();
-        write!(
-            current_buf,
-            "{}",
-            self.styled(Style::new().fg(Color::Green).bold(), "{") // Style::new().fg(Color::Green).dimmed().paint("{")
-        )
-        .unwrap();
-        self.print_kvs(&mut current_buf, data.kvs.iter().map(|(k, v)| (k, v)), "")
+        if self.config.bracketed_fields {
+            write!(
+                current_buf,
+                "{}",
+                self.styled(Style::new().fg(Color::Green).bold(), "{") // Style::new().fg(Color::Green).dimmed().paint("{")
+            )
             .unwrap();
-        write!(
-            current_buf,
-            "{}",
-            self.styled(Style::new().fg(Color::Green).bold(), "}") // Style::new().dimmed().paint("}")
-        )
-        .unwrap();
+        } else {
+            write!(current_buf, " ").unwrap();
+        }
+        self.print_kvs(&mut current_buf, data.kvs.iter().map(|(k, v)| (*k, v)))
+            .unwrap();
+        if self.config.bracketed_fields {
+            write!(
+                current_buf,
+                "{}",
+                self.styled(Style::new().fg(Color::Green).bold(), "}") // Style::new().dimmed().paint("}")
+            )
+            .unwrap();
+        }
 
         bufs.indent_current(indent, &self.config, style);
         let writer = self.make_writer.make_writer();

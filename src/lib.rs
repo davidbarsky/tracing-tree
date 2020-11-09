@@ -13,6 +13,8 @@ use tracing::{
     span::{Attributes, Id},
     Event, Subscriber,
 };
+#[cfg(feature = "tracing-log")]
+use tracing_log::NormalizeEvent;
 use tracing_subscriber::{
     fmt::MakeWriter,
     layer::{Context, Layer},
@@ -351,7 +353,15 @@ where
             )
             .expect("Unable to write to buffer");
         }
-        let level = event.metadata().level();
+
+        #[cfg(feature = "tracing-log")]
+        let normalized_meta = event.normalized_metadata();
+        #[cfg(feature = "tracing-log")]
+        let metadata = normalized_meta.as_ref().unwrap_or_else(|| event.metadata());
+        #[cfg(not(feature = "tracing-log"))]
+        let metadata = event.metadata();
+
+        let level = metadata.level();
         let level = if self.config.ansi {
             ColorLevel(level).to_string()
         } else {
@@ -360,7 +370,7 @@ where
         write!(&mut event_buf, "{level}", level = level).expect("Unable to write to buffer");
 
         if self.config.targets {
-            let target = event.metadata().target();
+            let target = metadata.target();
             write!(
                 &mut event_buf,
                 " {}",

@@ -189,14 +189,19 @@ pub struct FmtEvent<'a> {
 impl<'a> Visit for FmtEvent<'a> {
     fn record_debug(&mut self, field: &Field, value: &dyn fmt::Debug) {
         let buf = &mut self.bufs.current_buf;
-        write!(buf, "{comma} ", comma = if self.comma { "," } else { "" },).unwrap();
-        let name = field.name();
-        if name == "message" {
-            write!(buf, "{:?}", value).unwrap();
-            self.comma = true;
-        } else {
-            write!(buf, "{}={:?}", name, value).unwrap();
-            self.comma = true;
+        let comma = if self.comma { "," } else { "" };
+        match field.name() {
+            "message" => {
+                write!(buf, "{} {:?}", comma, value).unwrap();
+                self.comma = true;
+            }
+            // Skip fields that are actually log metadata that have already been handled
+            #[cfg(feature = "tracing-log")]
+            name if name.starts_with("log.") => {}
+            name => {
+                write!(buf, "{} {}={:?}", comma, name, value).unwrap();
+                self.comma = true;
+            }
         }
     }
 }

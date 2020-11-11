@@ -209,7 +209,6 @@ where
         &self,
         id: &tracing::Id,
         ctx: &Context<S>,
-        entering: bool,
         style: SpanMode,
     ) {
         let span = ctx
@@ -277,9 +276,9 @@ where
         let span = ctx.span(id).expect("in new_span but span does not exist");
         span.extensions_mut().insert(data);
         if let Some(span) = ctx.scope().last() {
-            self.write_span_info(&span.id(), &ctx, false, SpanMode::PreOpen);
+            self.write_span_info(&span.id(), &ctx, SpanMode::PreOpen);
         }
-        self.write_span_info(id, &ctx, false, SpanMode::Open);
+        self.write_span_info(id, &ctx, SpanMode::Open);
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
@@ -357,9 +356,9 @@ where
 
     fn on_close(&self, id: Id, ctx: Context<S>) {
         if self.config.verbose_exit {
-            self.write_span_info(&id, &ctx, false, SpanMode::Close);
+            self.write_span_info(&id, &ctx, SpanMode::Close);
             if let Some(span) = ctx.scope().last() {
-                self.write_span_info(&span.id(), &ctx, false, SpanMode::PostClose);
+                self.write_span_info(&span.id(), &ctx, SpanMode::PostClose);
             }
         }
     }

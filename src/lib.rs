@@ -275,10 +275,12 @@ where
         let data = Data::new(attrs);
         let span = ctx.span(id).expect("in new_span but span does not exist");
         span.extensions_mut().insert(data);
-        if let Some(span) = ctx.scope().last() {
-            self.write_span_info(&span.id(), &ctx, SpanMode::PreOpen);
+        if self.config.verbose_entry {
+            if let Some(span) = ctx.scope().last() {
+                self.write_span_info(&span.id(), &ctx, SpanMode::PreOpen);
+            }
+            self.write_span_info(id, &ctx, SpanMode::Open);
         }
-        self.write_span_info(id, &ctx, SpanMode::Open);
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {

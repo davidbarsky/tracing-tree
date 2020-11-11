@@ -134,7 +134,7 @@ impl Default for Config {
             render_thread_ids: false,
             render_thread_names: false,
             wraparound: usize::max_value(),
-            verbose_entry: true,
+            verbose_entry: false,
             verbose_exit: false,
             bracketed_fields: false,
         }

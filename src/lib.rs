@@ -223,41 +223,43 @@ where
 
         let indent = ctx.scope().count();
 
-        if self.config.targets {
-            let target = span.metadata().target();
-            write!(
-                &mut current_buf,
-                "{}::",
-                self.styled(Style::new().dimmed(), target,),
-            )
-            .expect("Unable to write to buffer");
-        }
+        if self.config.verbose_entry || matches!(style, SpanMode::Open | SpanMode::Event) {
+            if self.config.targets {
+                let target = span.metadata().target();
+                write!(
+                    &mut current_buf,
+                    "{}::",
+                    self.styled(Style::new().dimmed(), target,),
+                )
+                .expect("Unable to write to buffer");
+            }
 
-        write!(
-            current_buf,
-            "{name}",
-            name = self.styled(Style::new().fg(Color::Green).bold(), span.metadata().name())
-        )
-        .unwrap();
-        if self.config.bracketed_fields {
             write!(
                 current_buf,
-                "{}",
-                self.styled(Style::new().fg(Color::Green).bold(), "{") // Style::new().fg(Color::Green).dimmed().paint("{")
+                "{name}",
+                name = self.styled(Style::new().fg(Color::Green).bold(), span.metadata().name())
             )
             .unwrap();
-        } else {
-            write!(current_buf, " ").unwrap();
-        }
-        self.print_kvs(&mut current_buf, data.kvs.iter().map(|(k, v)| (*k, v)))
-            .unwrap();
-        if self.config.bracketed_fields {
-            write!(
-                current_buf,
-                "{}",
-                self.styled(Style::new().fg(Color::Green).bold(), "}") // Style::new().dimmed().paint("}")
-            )
-            .unwrap();
+            if self.config.bracketed_fields {
+                write!(
+                    current_buf,
+                    "{}",
+                    self.styled(Style::new().fg(Color::Green).bold(), "{") // Style::new().fg(Color::Green).dimmed().paint("{")
+                )
+                .unwrap();
+            } else {
+                write!(current_buf, " ").unwrap();
+            }
+            self.print_kvs(&mut current_buf, data.kvs.iter().map(|(k, v)| (*k, v)))
+                .unwrap();
+            if self.config.bracketed_fields {
+                write!(
+                    current_buf,
+                    "{}",
+                    self.styled(Style::new().fg(Color::Green).bold(), "}") // Style::new().dimmed().paint("}")
+                )
+                .unwrap();
+            }
         }
 
         bufs.indent_current(indent, &self.config, style);
@@ -275,12 +277,10 @@ where
         let data = Data::new(attrs);
         let span = ctx.span(id).expect("in new_span but span does not exist");
         span.extensions_mut().insert(data);
-        if self.config.verbose_entry {
-            if let Some(span) = ctx.scope().last() {
-                self.write_span_info(&span.id(), &ctx, SpanMode::PreOpen);
-            }
-            self.write_span_info(id, &ctx, SpanMode::Open);
+        if let Some(span) = ctx.scope().last() {
+            self.write_span_info(&span.id(), &ctx, SpanMode::PreOpen);
         }
+        self.write_span_info(id, &ctx, SpanMode::Open);
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
@@ -357,11 +357,9 @@ where
     }
 
     fn on_close(&self, id: Id, ctx: Context<S>) {
-        if self.config.verbose_exit {
-            self.write_span_info(&id, &ctx, SpanMode::Close);
-            if let Some(span) = ctx.scope().last() {
-                self.write_span_info(&span.id(), &ctx, SpanMode::PostClose);
-            }
+        self.write_span_info(&id, &ctx, SpanMode::Close);
+        if let Some(span) = ctx.scope().last() {
+            self.write_span_info(&span.id(), &ctx, SpanMode::PostClose);
         }
     }
 }

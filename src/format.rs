@@ -225,8 +225,8 @@ fn indent_block_with_lines(
     style: SpanMode,
 ) {
     let indent = match style {
-        SpanMode::PreOpen => indent.saturating_sub(1),
-        SpanMode::Open => indent.saturating_sub(1),
+        SpanMode::PreOpen => indent,
+        SpanMode::Open => indent,
         SpanMode::Close => indent,
         SpanMode::PostClose => indent,
         SpanMode::Event => indent,

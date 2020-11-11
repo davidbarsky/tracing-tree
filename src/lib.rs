@@ -223,11 +223,6 @@ where
         let mut current_buf = &mut bufs.current_buf;
 
         let indent = ctx.scope().count();
-        let indent = if entering {
-            indent.saturating_sub(1)
-        } else {
-            indent
-        };
 
         if self.config.targets {
             let target = span.metadata().target();
@@ -281,29 +276,8 @@ where
         let data = Data::new(attrs);
         let span = ctx.span(id).expect("in new_span but span does not exist");
         span.extensions_mut().insert(data);
-    }
-
-    fn on_enter(&self, id: &tracing::Id, ctx: Context<S>) {
-        let mut iter = ctx.scope();
-        let mut prev = iter.next();
-        let mut cur = iter.next();
-        loop {
-            match (prev, cur) {
-                (Some(span), Some(cur_elem)) => {
-                    if let Some(next) = iter.next() {
-                        prev = Some(cur_elem);
-                        cur = Some(next);
-                    } else {
-                        self.write_span_info(&span.id(), &ctx, false, SpanMode::PreOpen);
-                        break;
-                    }
-                }
-                // Iterator is not sealed, so we need to catch this case.
-                (None, Some(_)) => break,
-                // Just the new span on the stack
-                (Some(_), None) => break,
-                (None, None) => unreachable!("just entered span must exist"),
-            }
+        if let Some(span) = ctx.scope().last() {
+            self.write_span_info(&span.id(), &ctx, false, SpanMode::PreOpen);
         }
         self.write_span_info(id, &ctx, false, SpanMode::Open);
     }
@@ -381,9 +355,9 @@ where
         bufs.flush_current_buf(writer)
     }
 
-    fn on_exit(&self, id: &Id, ctx: Context<S>) {
+    fn on_close(&self, id: Id, ctx: Context<S>) {
         if self.config.verbose_exit {
-            self.write_span_info(id, &ctx, false, SpanMode::Close);
+            self.write_span_info(&id, &ctx, false, SpanMode::Close);
             if let Some(span) = ctx.scope().last() {
                 self.write_span_info(&span.id(), &ctx, false, SpanMode::PostClose);
             }

@@ -1,0 +1,14 @@
+1:main│ ├─ms INFO quiet starting
+1:main│ ├─ms INFO quiet listening
+1:main│ │ ├─ms DEBUG quiet connected
+1:main│ │ ├─ms DEBUG quiet message received, length=2
+1:main│ │ ├─ms DEBUG quiet connected
+1:main│ │ ├─ms ERROR quiet hello
+1:main│ │ ├─ms WARN quiet weak encryption requested, algo="xor"
+1:main│ │ ├─ms DEBUG quiet response sent, length=8
+1:main│ │ ├─ms DEBUG quiet disconnected
+1:main│ │ ├─ms DEBUG quiet message received, length=5
+1:main│ │ ├─ms DEBUG quiet response sent, length=8
+1:main│ │ ├─ms DEBUG quiet disconnected
+1:main│ ├─ms WARN quiet internal error
+1:main│ ├─ms INFO quiet exit

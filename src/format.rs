@@ -16,8 +16,8 @@ pub(crate) const LINE_OPEN: &str = "┐";
 
 pub(crate) enum SpanMode {
     PreOpen,
-    Open,
-    Close,
+    Open { verbose: bool },
+    Close { verbose: bool },
     PostClose,
     Event,
 }
@@ -259,7 +259,14 @@ fn indent_block_with_lines(
             }
             buf.push_str(LINE_OPEN);
         }
-        SpanMode::Open => {
+        SpanMode::Open { verbose: false } => {
+            buf.push_str(LINE_BRANCH);
+            for _ in 1..indent_amount {
+                buf.push_str(LINE_HORIZ);
+            }
+            buf.push_str(LINE_OPEN);
+        }
+        SpanMode::Open { verbose: true } => {
             buf.push_str(LINE_VERT);
             for _ in 1..(indent_amount / 2) {
                 buf.push(' ');
@@ -278,7 +285,14 @@ fn indent_block_with_lines(
                 buf.push_str(LINE_VERT);
             }
         }
-        SpanMode::Close => {
+        SpanMode::Close { verbose: false } => {
+            buf.push_str(LINE_BRANCH);
+            for _ in 1..indent_amount {
+                buf.push_str(LINE_HORIZ);
+            }
+            buf.push_str(LINE_CLOSE);
+        }
+        SpanMode::Close { verbose: true } => {
             buf.push_str(LINE_VERT);
             for _ in 1..(indent_amount / 2) {
                 buf.push(' ');

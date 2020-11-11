@@ -223,7 +223,7 @@ where
 
         let indent = ctx.scope().count();
 
-        if self.config.verbose_entry || matches!(style, SpanMode::Open | SpanMode::Event) {
+        if self.config.verbose_entry || matches!(style, SpanMode::Open { .. } | SpanMode::Event) {
             if self.config.targets {
                 let target = span.metadata().target();
                 write!(
@@ -277,10 +277,18 @@ where
         let data = Data::new(attrs);
         let span = ctx.span(id).expect("in new_span but span does not exist");
         span.extensions_mut().insert(data);
-        if let Some(span) = ctx.scope().last() {
-            self.write_span_info(&span.id(), &ctx, SpanMode::PreOpen);
+        if self.config.verbose_exit {
+            if let Some(span) = ctx.scope().last() {
+                self.write_span_info(&span.id(), &ctx, SpanMode::PreOpen);
+            }
         }
-        self.write_span_info(id, &ctx, SpanMode::Open);
+        self.write_span_info(
+            id,
+            &ctx,
+            SpanMode::Open {
+                verbose: self.config.verbose_entry,
+            },
+        );
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
@@ -357,9 +365,17 @@ where
     }
 
     fn on_close(&self, id: Id, ctx: Context<S>) {
-        self.write_span_info(&id, &ctx, SpanMode::Close);
-        if let Some(span) = ctx.scope().last() {
-            self.write_span_info(&span.id(), &ctx, SpanMode::PostClose);
+        self.write_span_info(
+            &id,
+            &ctx,
+            SpanMode::Close {
+                verbose: self.config.verbose_exit,
+            },
+        );
+        if self.config.verbose_exit {
+            if let Some(span) = ctx.scope().last() {
+                self.write_span_info(&span.id(), &ctx, SpanMode::PostClose);
+            }
         }
     }
 }

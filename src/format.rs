@@ -224,13 +224,6 @@ fn indent_block_with_lines(
     prefix: &str,
     style: SpanMode,
 ) {
-    let indent = match style {
-        SpanMode::PreOpen => indent,
-        SpanMode::Open => indent,
-        SpanMode::Close => indent,
-        SpanMode::PostClose => indent,
-        SpanMode::Event => indent,
-    };
     let indent_spaces = indent * indent_amount;
     if lines.is_empty() {
         return;

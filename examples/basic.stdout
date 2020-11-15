@@ -34,6 +34,7 @@
 1:main│ │┌┘basic::conn peer_addr="8.8.8.8", port=18230
 1:main│ ├┘basic::server host="localhost", port=8080
 1:main│ ├─ms WARN basic internal error
+1:main│ ├─ms ERROR basic this is a log message
 1:main│ ├─ms INFO basic exit
 1:main│┌┘basic::server host="localhost", port=8080
 1:main├┘basic::hierarchical-example version=0.1

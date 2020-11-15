@@ -8,14 +8,12 @@ fn main() {
         .with_indent_amount(2)
         .with_thread_names(true)
         .with_thread_ids(true)
-        .with_verbose_exit(true)
-        .with_verbose_entry(true)
+        .with_verbose_exit(false)
+        .with_verbose_entry(false)
         .with_targets(true);
 
     let subscriber = Registry::default().with(layer);
     tracing::subscriber::set_global_default(subscriber).unwrap();
-    #[cfg(feature = "tracing-log")]
-    tracing_log::LogTracer::init().unwrap();
 
     let app_span = span!(Level::TRACE, "hierarchical-example", version = %0.1);
     let _e = app_span.enter();
@@ -66,7 +64,6 @@ fn main() {
     });
     drop(peer2);
     warn!("internal error");
-    log::error!("this is a log message");
     info!("exit");
 }
 

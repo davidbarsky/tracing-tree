@@ -211,7 +211,6 @@ where
         &self,
         id: &tracing::Id,
         ctx: &Context<S>,
-        entering: bool,
         style: SpanMode,
     ) {
         let span = ctx
@@ -225,47 +224,44 @@ where
         let mut current_buf = &mut bufs.current_buf;
 
         let indent = ctx.scope().count();
-        let indent = if entering {
-            indent.saturating_sub(1)
-        } else {
-            indent
-        };
 
-        if self.config.targets {
-            let target = span.metadata().target();
-            write!(
-                &mut current_buf,
-                "{}::",
-                self.styled(Style::new().dimmed(), target,),
-            )
-            .expect("Unable to write to buffer");
-        }
+        if self.config.verbose_entry || matches!(style, SpanMode::Open { .. } | SpanMode::Event) {
+            if self.config.targets {
+                let target = span.metadata().target();
+                write!(
+                    &mut current_buf,
+                    "{}::",
+                    self.styled(Style::new().dimmed(), target,),
+                )
+                .expect("Unable to write to buffer");
+            }
 
-        write!(
-            current_buf,
-            "{name}",
-            name = self.styled(Style::new().fg(Color::Green).bold(), span.metadata().name())
-        )
-        .unwrap();
-        if self.config.bracketed_fields {
             write!(
                 current_buf,
-                "{}",
-                self.styled(Style::new().fg(Color::Green).bold(), "{") // Style::new().fg(Color::Green).dimmed().paint("{")
+                "{name}",
+                name = self.styled(Style::new().fg(Color::Green).bold(), span.metadata().name())
             )
             .unwrap();
-        } else {
-            write!(current_buf, " ").unwrap();
-        }
-        self.print_kvs(&mut current_buf, data.kvs.iter().map(|(k, v)| (*k, v)))
-            .unwrap();
-        if self.config.bracketed_fields {
-            write!(
-                current_buf,
-                "{}",
-                self.styled(Style::new().fg(Color::Green).bold(), "}") // Style::new().dimmed().paint("}")
-            )
-            .unwrap();
+            if self.config.bracketed_fields {
+                write!(
+                    current_buf,
+                    "{}",
+                    self.styled(Style::new().fg(Color::Green).bold(), "{") // Style::new().fg(Color::Green).dimmed().paint("{")
+                )
+                .unwrap();
+            } else {
+                write!(current_buf, " ").unwrap();
+            }
+            self.print_kvs(&mut current_buf, data.kvs.iter().map(|(k, v)| (*k, v)))
+                .unwrap();
+            if self.config.bracketed_fields {
+                write!(
+                    current_buf,
+                    "{}",
+                    self.styled(Style::new().fg(Color::Green).bold(), "}") // Style::new().dimmed().paint("}")
+                )
+                .unwrap();
+            }
         }
 
         bufs.indent_current(indent, &self.config, style);
@@ -283,31 +279,18 @@ where
         let data = Data::new(attrs);
         let span = ctx.span(id).expect("in new_span but span does not exist");
         span.extensions_mut().insert(data);
-    }
-
-    fn on_enter(&self, id: &tracing::Id, ctx: Context<S>) {
-        let mut iter = ctx.scope();
-        let mut prev = iter.next();
-        let mut cur = iter.next();
-        loop {
-            match (prev, cur) {
-                (Some(span), Some(cur_elem)) => {
-                    if let Some(next) = iter.next() {
-                        prev = Some(cur_elem);
-                        cur = Some(next);
-                    } else {
-                        self.write_span_info(&span.id(), &ctx, false, SpanMode::PreOpen);
-                        break;
-                    }
-                }
-                // Iterator is not sealed, so we need to catch this case.
-                (None, Some(_)) => break,
-                // Just the new span on the stack
-                (Some(_), None) => break,
-                (None, None) => unreachable!("just entered span must exist"),
+        if self.config.verbose_exit {
+            if let Some(span) = ctx.scope().last() {
+                self.write_span_info(&span.id(), &ctx, SpanMode::PreOpen);
             }
         }
-        self.write_span_info(id, &ctx, false, SpanMode::Open);
+        self.write_span_info(
+            id,
+            &ctx,
+            SpanMode::Open {
+                verbose: self.config.verbose_entry,
+            },
+        );
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
@@ -391,11 +374,17 @@ where
         bufs.flush_current_buf(writer)
     }
 
-    fn on_exit(&self, id: &Id, ctx: Context<S>) {
+    fn on_close(&self, id: Id, ctx: Context<S>) {
+        self.write_span_info(
+            &id,
+            &ctx,
+            SpanMode::Close {
+                verbose: self.config.verbose_exit,
+            },
+        );
         if self.config.verbose_exit {
-            self.write_span_info(id, &ctx, false, SpanMode::Close);
             if let Some(span) = ctx.scope().last() {
-                self.write_span_info(&span.id(), &ctx, false, SpanMode::PostClose);
+                self.write_span_info(&span.id(), &ctx, SpanMode::PostClose);
             }
         }
     }

@@ -1,6 +1,6 @@
 [package]
 name = "tracing-tree"
-version = "0.1.6"
+version = "0.1.7"
 authors = ["David Barsky <me@davidbarsky.com>", "Nathan Whitaker"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -11,19 +11,19 @@ readme = "README.md"
 [dependencies]
 tracing = "0.1"
 tracing-subscriber = { version = "0.2", default-features = false, features = ["registry", "fmt"] }
-termcolor = "1.0.5"
-ansi_term = "0.12.1"
-chrono = "0.4.10"
-atty = "0.2.14"
+termcolor = "1.1"
+ansi_term = "0.12"
+chrono = "0.4"
+atty = "0.2"
 tracing-log = { version = "0.1", optional = true }
 
 [features]
 default = ["tracing-log"]
 
 [dev-dependencies]
-glob = "0.3.0"
-assert_cmd = "1.0.1"
-log = "0.4.11"
+glob = "0.3"
+assert_cmd = "1"
+log = "0.4"
 
 [[test]]
 name = "ui"

@@ -1,12 +1,12 @@
 pub(crate) mod format;
 
 use ansi_term::{Color, Style};
-use chrono::{DateTime, Local};
 use format::{Buffers, ColorLevel, Config, FmtEvent, SpanMode};
 use std::{
     fmt::{self, Write as _},
     io,
     sync::Mutex,
+    time::Instant,
 };
 use tracing::{
     field::{Field, Visit},
@@ -22,14 +22,14 @@ use tracing_subscriber::{
 };
 
 pub(crate) struct Data {
-    start: DateTime<Local>,
+    start: Instant,
     kvs: Vec<(&'static str, String)>,
 }
 
 impl Data {
     pub fn new(attrs: &tracing::span::Attributes<'_>) -> Self {
         let mut span = Self {
-            start: Local::now(),
+            start: Instant::now(),
             kvs: Vec::new(),
         };
         attrs.record(&mut span);
@@ -322,16 +322,12 @@ where
             },
             None => None,
         };
-        let now = Local::now();
         if let Some(start) = start {
-            let elapsed = now - start;
+            let elapsed = start.elapsed();
             write!(
                 &mut event_buf,
                 "{timestamp}{unit} ",
-                timestamp = self.styled(
-                    Style::new().dimmed(),
-                    elapsed.num_milliseconds().to_string()
-                ),
+                timestamp = self.styled(Style::new().dimmed(), elapsed.as_millis().to_string()),
                 unit = self.styled(Style::new().dimmed(), "ms"),
             )
             .expect("Unable to write to buffer");

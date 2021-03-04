@@ -14,6 +14,7 @@ pub(crate) const LINE_BRANCH: &str = "├";
 pub(crate) const LINE_CLOSE: &str = "┘";
 pub(crate) const LINE_OPEN: &str = "┐";
 
+#[derive(Copy, Clone)]
 pub(crate) enum SpanMode {
     PreOpen,
     Open { verbose: bool },
@@ -167,17 +168,53 @@ impl Buffers {
 
     pub(crate) fn indent_current(&mut self, indent: usize, config: &Config, style: SpanMode) {
         self.current_buf.push('\n');
+        let prefix = config.prefix();
+
+        // Render something when wraparound occurs so the user is aware of it
+        if config.indent_lines {
+            match style {
+                SpanMode::Close { .. } | SpanMode::PostClose => {
+                    if indent > 0 && (indent + 1) % config.wraparound == 0 {
+                        self.indent_buf.push_str(&prefix);
+                        for _ in 0..(indent % config.wraparound * config.indent_amount) {
+                            self.indent_buf.push_str(LINE_HORIZ);
+                        }
+                        self.indent_buf.push_str(LINE_OPEN);
+                        self.indent_buf.push('\n');
+                    }
+                }
+                _ => {}
+            }
+        }
+
         indent_block(
             &mut self.current_buf,
             &mut self.indent_buf,
             indent % config.wraparound,
             config.indent_amount,
             config.indent_lines,
-            &config.prefix(),
+            &prefix,
             style,
         );
         self.current_buf.clear();
         self.flush_indent_buf();
+
+        // Render something when wraparound occurs so the user is aware of it
+        if config.indent_lines {
+            match style {
+                SpanMode::PreOpen | SpanMode::Open { .. } => {
+                    if indent > 0 && (indent + 1) % config.wraparound == 0 {
+                        self.current_buf.push_str(&prefix);
+                        for _ in 0..(indent % config.wraparound * config.indent_amount) {
+                            self.current_buf.push_str(LINE_HORIZ);
+                        }
+                        self.current_buf.push_str(LINE_CLOSE);
+                        self.current_buf.push('\n');
+                    }
+                }
+                _ => {}
+            }
+        }
     }
 }
 

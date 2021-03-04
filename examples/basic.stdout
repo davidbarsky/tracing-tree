@@ -1,4 +1,4 @@
-1:mainbasic::hierarchical-example version=0.1
+1:main┐basic::hierarchical-example version=0.1
 1:main├┐basic::hierarchical-example version=0.1
 1:main│└┐basic::server host="localhost", port=8080
 1:main│ ├─ms INFO basic starting
@@ -38,4 +38,4 @@
 1:main│ ├─ms INFO basic exit
 1:main│┌┘basic::server host="localhost", port=8080
 1:main├┘basic::hierarchical-example version=0.1
-1:mainbasic::hierarchical-example version=0.1
+1:main┘basic::hierarchical-example version=0.1

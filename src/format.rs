@@ -235,6 +235,15 @@ fn indent_block_with_lines(
     } else if indent_spaces == 0 {
         for line in lines {
             buf.push_str(prefix);
+            // The first indent is special, we only need to print open/close and nothing else
+            if indent == 0 {
+                match style {
+                    SpanMode::Open { .. } => buf.push_str(LINE_OPEN),
+                    SpanMode::Close { .. } => buf.push_str(LINE_CLOSE),
+                    SpanMode::PreOpen | SpanMode::PostClose => {}
+                    SpanMode::Event => {}
+                }
+            }
             buf.push_str(line);
             buf.push('\n');
         }

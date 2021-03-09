@@ -1,4 +1,4 @@
-fibonacci_seq{to=5}
+┐fibonacci_seq{to=5}
 ├─ms DEBUG Pushing 0 fibonacci
 ├─┐nth_fibonacci{n=0}
 │ ├─ms DEBUG Base case
@@ -107,5 +107,5 @@ fibonacci_seq{to=5}
 │ │ ├─┘
 │ ├─┘
 ├─┘
-
+┘
 INFO The first 5 fibonacci numbers are [1, 1, 2, 3, 5, 8]

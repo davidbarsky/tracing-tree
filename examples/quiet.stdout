@@ -1,4 +1,4 @@
-1:mainquiet::hierarchical-example version=0.1
+1:main┐quiet::hierarchical-example version=0.1
 1:main├─┐quiet::server host="localhost", port=8080
 1:main│ ├─ms INFO quiet starting
 1:main│ ├─ms INFO quiet listening
@@ -25,4 +25,4 @@
 1:main│ ├─ms WARN quiet internal error
 1:main│ ├─ms INFO quiet exit
 1:main├─┘
-1:main
+1:main┘

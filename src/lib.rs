@@ -8,7 +8,7 @@ use std::{
     sync::Mutex,
     time::Instant,
 };
-use tracing::{
+use tracing_core::{
     field::{Field, Visit},
     span::{Attributes, Id},
     Event, Subscriber,
@@ -27,7 +27,7 @@ pub(crate) struct Data {
 }
 
 impl Data {
-    pub fn new(attrs: &tracing::span::Attributes<'_>) -> Self {
+    pub fn new(attrs: &Attributes<'_>) -> Self {
         let mut span = Self {
             start: Instant::now(),
             kvs: Vec::new(),
@@ -209,7 +209,7 @@ where
 
     fn write_span_info<S: Subscriber + for<'span> LookupSpan<'span> + fmt::Debug>(
         &self,
-        id: &tracing::Id,
+        id: &Id,
         ctx: &Context<S>,
         style: SpanMode,
     ) {

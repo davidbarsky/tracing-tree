@@ -221,7 +221,10 @@ where
         let bufs = &mut *guard;
         let mut current_buf = &mut bufs.current_buf;
 
-        let indent = span.scope().count();
+        // todo(david): i'm going to keep this for a bit since there's an odd discrepancy in counting
+        // that i don't want to resolve rn lol
+        #[allow(deprecated)]
+        let indent = ctx.scope().count();
 
         if self.config.verbose_entry || matches!(style, SpanMode::Open { .. } | SpanMode::Event) {
             if self.config.targets {

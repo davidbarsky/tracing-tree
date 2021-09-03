@@ -207,14 +207,12 @@ where
         Ok(())
     }
 
-    fn write_span_info<S: Subscriber + for<'span> LookupSpan<'span> + fmt::Debug>(
-        &self,
-        id: &tracing::Id,
-        ctx: &Context<S>,
-        style: SpanMode,
-    ) {
+    fn write_span_info<S>(&self, id: &tracing::Id, ctx: &Context<S>, style: SpanMode)
+    where
+        S: Subscriber + for<'span> LookupSpan<'span> + fmt::Debug,
+    {
         let span = ctx
-            .span(&id)
+            .span(id)
             .expect("in on_enter/on_exit but span does not exist");
         let ext = span.extensions();
         let data = ext.get::<Data>().expect("span does not have data");
@@ -223,6 +221,9 @@ where
         let bufs = &mut *guard;
         let mut current_buf = &mut bufs.current_buf;
 
+        // todo(david): i'm going to keep this for a bit since there's an odd discrepancy in counting
+        // that i don't want to resolve rn lol
+        #[allow(deprecated)]
         let indent = ctx.scope().count();
 
         if self.config.verbose_entry || matches!(style, SpanMode::Open { .. } | SpanMode::Event) {
@@ -280,10 +281,11 @@ where
         let span = ctx.span(id).expect("in new_span but span does not exist");
         span.extensions_mut().insert(data);
         if self.config.verbose_exit {
-            if let Some(span) = ctx.scope().last() {
+            if let Some(span) = span.parent() {
                 self.write_span_info(&span.id(), &ctx, SpanMode::PreOpen);
             }
         }
+
         self.write_span_info(
             id,
             &ctx,
@@ -301,7 +303,9 @@ where
         // printing the indentation
         let indent = if ctx.current_span().id().is_some() {
             // size hint isn't implemented on Scope.
-            ctx.scope().count()
+            ctx.event_scope(event)
+                .expect("Unable to get span scope; this is a bug")
+                .count()
         } else {
             0
         };
@@ -378,8 +382,9 @@ where
                 verbose: self.config.verbose_exit,
             },
         );
+
         if self.config.verbose_exit {
-            if let Some(span) = ctx.scope().last() {
+            if let Some(span) = ctx.span(&id).and_then(|span| span.parent()) {
                 self.write_span_info(&span.id(), &ctx, SpanMode::PostClose);
             }
         }

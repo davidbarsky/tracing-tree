@@ -378,7 +378,7 @@ fn indent_block_with_lines(
             }
         }
     }
-    buf.push_str(&lines[0]);
+    buf.push_str(lines[0]);
     buf.push('\n');
 
     // add the rest of the indentation, since we don't want to draw horizontal lines

@@ -207,7 +207,7 @@ where
         Ok(())
     }
 
-    fn write_span_info<S>(&self, id: &tracing::Id, ctx: &Context<S>, style: SpanMode)
+    fn write_span_info<S>(&self, id: &Id, ctx: &Context<S>, style: SpanMode)
     where
         S: Subscriber + for<'span> LookupSpan<'span> + fmt::Debug,
     {

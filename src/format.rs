@@ -3,7 +3,7 @@ use std::{
     fmt::{self, Write as _},
     io,
 };
-use tracing::{
+use tracing_core::{
     field::{Field, Visit},
     Level,
 };

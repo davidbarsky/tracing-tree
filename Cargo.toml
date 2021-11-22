@@ -1,6 +1,6 @@
 [package]
 name = "tracing-tree"
-version = "0.1.10"
+version = "0.1.11"
 authors = ["David Barsky <me@davidbarsky.com>", "Nathan Whitaker"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -11,7 +11,6 @@ readme = "README.md"
 [dependencies]
 tracing-core = "0.1"
 tracing-subscriber = { version = "0.2", default-features = false, features = ["registry", "fmt"] }
-termcolor = "1.1"
 ansi_term = "0.12"
 atty = "0.2"
 tracing-log = { version = "0.1", optional = true }

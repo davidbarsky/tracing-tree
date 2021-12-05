@@ -44,7 +44,7 @@ impl Visit for Data {
 }
 
 #[derive(Debug)]
-pub struct HierarchicalLayer<W = fn() -> io::Stdout>
+pub struct HierarchicalLayer<W = fn() -> io::Stderr>
 where
     W: for<'writer> MakeWriter<'writer> + 'static,
 {
@@ -59,16 +59,16 @@ impl Default for HierarchicalLayer {
     }
 }
 
-impl HierarchicalLayer<fn() -> io::Stdout> {
+impl HierarchicalLayer<fn() -> io::Stderr> {
     pub fn new(indent_amount: usize) -> Self {
-        let ansi = atty::is(atty::Stream::Stdout);
+        let ansi = atty::is(atty::Stream::Stderr);
         let config = Config {
             ansi,
             indent_amount,
             ..Default::default()
         };
         Self {
-            make_writer: io::stdout,
+            make_writer: io::stderr,
             bufs: Mutex::new(Buffers::new()),
             config,
         }

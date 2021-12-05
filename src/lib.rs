@@ -301,7 +301,7 @@ where
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
         let mut guard = self.bufs.lock().unwrap();
-        let mut bufs = &mut *guard;
+        let bufs = &mut *guard;
         let mut event_buf = &mut bufs.current_buf;
 
         // printing the indentation
@@ -366,10 +366,7 @@ where
             .expect("Unable to write to buffer");
         }
 
-        let mut visitor = FmtEvent {
-            comma: false,
-            bufs: &mut bufs,
-        };
+        let mut visitor = FmtEvent { comma: false, bufs };
         event.record(&mut visitor);
         visitor
             .bufs

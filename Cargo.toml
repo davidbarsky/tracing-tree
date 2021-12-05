@@ -10,7 +10,7 @@ readme = "README.md"
 
 [dependencies]
 tracing-core = "0.1"
-tracing-subscriber = { version = "0.2", default-features = false, features = ["registry", "fmt"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["registry", "fmt", "std"] }
 ansi_term = "0.12"
 atty = "0.2"
 tracing-log = { version = "0.1", optional = true }

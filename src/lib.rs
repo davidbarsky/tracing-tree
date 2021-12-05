@@ -226,7 +226,8 @@ where
             .as_ref()
             .map(registry::SpanRef::scope)
             .map(registry::Scope::from_root)
-            .iter()
+            .into_iter()
+            .flatten()
             .count();
 
         if self.config.verbose_entry || matches!(style, SpanMode::Open { .. } | SpanMode::Event) {

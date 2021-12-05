@@ -44,7 +44,7 @@ impl Visit for Data {
 }
 
 #[derive(Debug)]
-pub struct HierarchicalLayer<W = fn() -> io::Stdout>
+pub struct HierarchicalLayer<W = fn() -> io::Stderr>
 where
     W: for<'writer> MakeWriter<'writer> + 'static,
 {

@@ -18,7 +18,7 @@ use tracing_log::NormalizeEvent;
 use tracing_subscriber::{
     fmt::MakeWriter,
     layer::{Context, Layer},
-    registry::LookupSpan,
+    registry::{self, LookupSpan},
 };
 
 pub(crate) struct Data {
@@ -46,7 +46,7 @@ impl Visit for Data {
 #[derive(Debug)]
 pub struct HierarchicalLayer<W = fn() -> io::Stdout>
 where
-    W: MakeWriter + 'static,
+    W: for<'writer> MakeWriter<'writer> + 'static,
 {
     make_writer: W,
     bufs: Mutex<Buffers>,
@@ -77,7 +77,7 @@ impl HierarchicalLayer<fn() -> io::Stdout> {
 
 impl<W> HierarchicalLayer<W>
 where
-    W: MakeWriter + 'static,
+    W: for<'writer> MakeWriter<'writer> + 'static,
 {
     /// Enables terminal colors, boldness and italics.
     pub fn with_ansi(self, ansi: bool) -> Self {
@@ -89,7 +89,7 @@ where
 
     pub fn with_writer<W2>(self, make_writer: W2) -> HierarchicalLayer<W2>
     where
-        W2: MakeWriter + 'static,
+        W2: for<'writer> MakeWriter<'writer>,
     {
         HierarchicalLayer {
             make_writer,
@@ -221,10 +221,14 @@ where
         let bufs = &mut *guard;
         let mut current_buf = &mut bufs.current_buf;
 
-        // todo(david): i'm going to keep this for a bit since there's an odd discrepancy in counting
-        // that i don't want to resolve rn lol
-        #[allow(deprecated)]
-        let indent = ctx.scope().count();
+        let indent = ctx
+            .lookup_current()
+            .as_ref()
+            .map(registry::SpanRef::scope)
+            .map(registry::Scope::from_root)
+            .into_iter()
+            .flatten()
+            .count();
 
         if self.config.verbose_entry || matches!(style, SpanMode::Open { .. } | SpanMode::Event) {
             if self.config.targets {
@@ -274,9 +278,9 @@ where
 impl<S, W> Layer<S> for HierarchicalLayer<W>
 where
     S: Subscriber + for<'span> LookupSpan<'span> + fmt::Debug,
-    W: MakeWriter + 'static,
+    W: for<'writer> MakeWriter<'writer> + 'static,
 {
-    fn new_span(&self, attrs: &Attributes, id: &Id, ctx: Context<S>) {
+    fn on_new_span(&self, attrs: &Attributes, id: &Id, ctx: Context<S>) {
         let data = Data::new(attrs);
         let span = ctx.span(id).expect("in new_span but span does not exist");
         span.extensions_mut().insert(data);
@@ -297,7 +301,7 @@ where
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
         let mut guard = self.bufs.lock().unwrap();
-        let mut bufs = &mut *guard;
+        let bufs = &mut *guard;
         let mut event_buf = &mut bufs.current_buf;
 
         // printing the indentation
@@ -362,10 +366,7 @@ where
             .expect("Unable to write to buffer");
         }
 
-        let mut visitor = FmtEvent {
-            comma: false,
-            bufs: &mut bufs,
-        };
+        let mut visitor = FmtEvent { comma: false, bufs };
         event.record(&mut visitor);
         visitor
             .bufs

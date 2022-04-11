@@ -167,11 +167,12 @@ impl Buffers {
     }
 
     pub(crate) fn indent_current(&mut self, indent: usize, config: &Config, style: SpanMode) {
-        self.current_buf.push('\n');
         let prefix = config.prefix();
 
         // Render something when wraparound occurs so the user is aware of it
         if config.indent_lines {
+            self.current_buf.push('\n');
+
             match style {
                 SpanMode::Close { .. } | SpanMode::PostClose => {
                     if indent > 0 && (indent + 1) % config.wraparound == 0 {

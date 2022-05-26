@@ -42,7 +42,6 @@ impl Visit for Data {
         self.kvs.push((field.name(), format!("{:?}", value)))
     }
 }
-
 #[derive(Debug)]
 pub struct HierarchicalLayer<W = fn() -> io::Stderr>
 where
@@ -209,7 +208,7 @@ where
 
     fn write_span_info<S>(&self, id: &Id, ctx: &Context<S>, style: SpanMode)
     where
-        S: Subscriber + for<'span> LookupSpan<'span> + fmt::Debug,
+        S: Subscriber + for<'span> LookupSpan<'span>,
     {
         let span = ctx
             .span(id)
@@ -277,13 +276,16 @@ where
 
 impl<S, W> Layer<S> for HierarchicalLayer<W>
 where
-    S: Subscriber + for<'span> LookupSpan<'span> + fmt::Debug,
+    S: Subscriber + for<'span> LookupSpan<'span>,
     W: for<'writer> MakeWriter<'writer> + 'static,
 {
     fn on_new_span(&self, attrs: &Attributes, id: &Id, ctx: Context<S>) {
-        let data = Data::new(attrs);
         let span = ctx.span(id).expect("in new_span but span does not exist");
-        span.extensions_mut().insert(data);
+        if span.extensions().get::<Data>().is_none() {
+            let data = Data::new(attrs);
+            span.extensions_mut().insert(data);
+        }
+
         if self.config.verbose_exit {
             if let Some(span) = span.parent() {
                 self.write_span_info(&span.id(), &ctx, SpanMode::PreOpen);

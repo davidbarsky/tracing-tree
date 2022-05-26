@@ -1,6 +1,6 @@
 [package]
 name = "tracing-tree"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["David Barsky <me@davidbarsky.com>", "Nathan Whitaker"]
 edition = "2018"
 license = "MIT OR Apache-2.0"

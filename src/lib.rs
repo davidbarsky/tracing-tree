@@ -16,7 +16,7 @@ use tracing_core::{
 #[cfg(feature = "tracing-log")]
 use tracing_log::NormalizeEvent;
 use tracing_subscriber::{
-    fmt::MakeWriter,
+    fmt::{time::FormatTime, MakeWriter},
     layer::{Context, Layer},
     registry::{self, LookupSpan},
 };
@@ -43,11 +43,13 @@ impl Visit for Data {
     }
 }
 #[derive(Debug)]
-pub struct HierarchicalLayer<W = fn() -> io::Stderr>
+pub struct HierarchicalLayer<W = fn() -> io::Stderr, FT = ()>
 where
     W: for<'writer> MakeWriter<'writer> + 'static,
+    FT: FormatTime,
 {
     make_writer: W,
+    timer: Option<FT>,
     bufs: Mutex<Buffers>,
     config: Config,
 }
@@ -68,15 +70,17 @@ impl HierarchicalLayer<fn() -> io::Stderr> {
         };
         Self {
             make_writer: io::stderr,
+            timer: None,
             bufs: Mutex::new(Buffers::new()),
             config,
         }
     }
 }
 
-impl<W> HierarchicalLayer<W>
+impl<W, FT> HierarchicalLayer<W, FT>
 where
     W: for<'writer> MakeWriter<'writer> + 'static,
+    FT: FormatTime,
 {
     /// Enables terminal colors, boldness and italics.
     pub fn with_ansi(self, ansi: bool) -> Self {
@@ -86,12 +90,13 @@ where
         }
     }
 
-    pub fn with_writer<W2>(self, make_writer: W2) -> HierarchicalLayer<W2>
+    pub fn with_writer<W2>(self, make_writer: W2) -> HierarchicalLayer<W2, FT>
     where
         W2: for<'writer> MakeWriter<'writer>,
     {
         HierarchicalLayer {
             make_writer,
+            timer: self.timer,
             config: self.config,
             bufs: self.bufs,
         }
@@ -110,6 +115,16 @@ where
         Self {
             config: self.config.with_indent_lines(indent_lines),
             ..self
+        }
+    }
+
+    /// Specifies how to measure and format time at which event has occurred.
+    pub fn with_timer<FT2: FormatTime>(self, timer: FT2) -> HierarchicalLayer<W, FT2> {
+        HierarchicalLayer {
+            make_writer: self.make_writer,
+            timer: Some(timer),
+            config: self.config,
+            bufs: self.bufs,
         }
     }
 
@@ -334,6 +349,18 @@ where
         };
         if let Some(start) = start {
             let elapsed = start.elapsed();
+
+            if let Some(timer) = self.timer.as_ref() {
+                timer
+                    // TODO(TmLev):
+                    //   Wants `Writer`, have `event_buf`.
+                    //   Using `writer` from line 403 requires two separate calls:
+                    //   one for timestamp, one for buffers.
+                    .format_time()
+                    .expect("Unable to write time to buffer");
+                write!(&mut event_buf, " ").expect("Unable to write to buffer");
+            }
+
             write!(
                 &mut event_buf,
                 "{timestamp}{unit} ",

@@ -352,10 +352,7 @@ where
 
             if let Some(timer) = self.timer.as_ref() {
                 timer
-                    // TODO(TmLev):
-                    //   Wants `Writer`, have `event_buf`.
-                    //   Using `writer` from line 403 requires two separate calls:
-                    //   one for timestamp, one for buffers.
+                    // TODO(TmLev): Wants `Writer`, have `event_buf`.
                     .format_time()
                     .expect("Unable to write time to buffer");
                 write!(&mut event_buf, " ").expect("Unable to write to buffer");

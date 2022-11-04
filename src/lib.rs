@@ -1,7 +1,7 @@
 pub(crate) mod format;
 
-use ansi_term::{Color, Style};
 use format::{Buffers, ColorLevel, Config, FmtEvent, SpanMode};
+use nu_ansi_term::{Color, Style};
 use std::{
     fmt::{self, Write as _},
     io,

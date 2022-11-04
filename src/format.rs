@@ -1,4 +1,4 @@
-use ansi_term::Color;
+use nu_ansi_term::Color;
 use std::{
     fmt::{self, Write as _},
     io,
@@ -251,7 +251,7 @@ impl<'a> fmt::Display for ColorLevel<'a> {
             Level::TRACE => Color::Purple.bold().paint("TRACE"),
             Level::DEBUG => Color::Blue.bold().paint("DEBUG"),
             Level::INFO => Color::Green.bold().paint(" INFO"),
-            Level::WARN => Color::RGB(252, 234, 160).bold().paint(" WARN"), // orange
+            Level::WARN => Color::Rgb(252, 234, 160).bold().paint(" WARN"), // orange
             Level::ERROR => Color::Red.bold().paint("ERROR"),
         }
         .fmt(f)

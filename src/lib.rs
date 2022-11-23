@@ -307,14 +307,10 @@ where
         let mut event_buf = &mut bufs.current_buf;
 
         // printing the indentation
-        let indent = if ctx.current_span().id().is_some() {
-            // size hint isn't implemented on Scope.
-            ctx.event_scope(event)
-                .expect("Unable to get span scope; this is a bug")
-                .count()
-        } else {
-            0
-        };
+        let indent = ctx
+            .event_scope(event)
+            .map(|scope| scope.count())
+            .unwrap_or(0);
 
         // check if this event occurred in the context of a span.
         // if it has, get the start time of this span.

@@ -1,6 +1,9 @@
 pub(crate) mod format;
+pub mod time;
 
+use crate::time::FormatTime;
 use format::{Buffers, ColorLevel, Config, FmtEvent, SpanMode};
+
 use nu_ansi_term::{Color, Style};
 use std::{
     fmt::{self, Write as _},
@@ -43,13 +46,15 @@ impl Visit for Data {
     }
 }
 #[derive(Debug)]
-pub struct HierarchicalLayer<W = fn() -> io::Stderr>
+pub struct HierarchicalLayer<W = fn() -> io::Stderr, FT = ()>
 where
     W: for<'writer> MakeWriter<'writer> + 'static,
+    FT: FormatTime,
 {
     make_writer: W,
     bufs: Mutex<Buffers>,
     config: Config,
+    timer: FT,
 }
 
 impl Default for HierarchicalLayer {
@@ -70,13 +75,15 @@ impl HierarchicalLayer<fn() -> io::Stderr> {
             make_writer: io::stderr,
             bufs: Mutex::new(Buffers::new()),
             config,
+            timer: (),
         }
     }
 }
 
-impl<W> HierarchicalLayer<W>
+impl<W, FT> HierarchicalLayer<W, FT>
 where
     W: for<'writer> MakeWriter<'writer> + 'static,
+    FT: FormatTime,
 {
     /// Enables terminal colors, boldness and italics.
     pub fn with_ansi(self, ansi: bool) -> Self {
@@ -86,7 +93,7 @@ where
         }
     }
 
-    pub fn with_writer<W2>(self, make_writer: W2) -> HierarchicalLayer<W2>
+    pub fn with_writer<W2>(self, make_writer: W2) -> HierarchicalLayer<W2, FT>
     where
         W2: for<'writer> MakeWriter<'writer>,
     {
@@ -94,6 +101,7 @@ where
             make_writer,
             config: self.config,
             bufs: self.bufs,
+            timer: self.timer,
         }
     }
 
@@ -110,6 +118,16 @@ where
         Self {
             config: self.config.with_indent_lines(indent_lines),
             ..self
+        }
+    }
+
+    /// Specifies how to measure and format time at which event has occurred.
+    pub fn with_timer<FT2: FormatTime>(self, timer: FT2) -> HierarchicalLayer<W, FT2> {
+        HierarchicalLayer {
+            make_writer: self.make_writer,
+            config: self.config,
+            bufs: self.bufs,
+            timer,
         }
     }
 
@@ -274,10 +292,11 @@ where
     }
 }
 
-impl<S, W> Layer<S> for HierarchicalLayer<W>
+impl<S, W, FT> Layer<S> for HierarchicalLayer<W, FT>
 where
     S: Subscriber + for<'span> LookupSpan<'span>,
     W: for<'writer> MakeWriter<'writer> + 'static,
+    FT: FormatTime + 'static, // TODO(TmLev): Maybe it doesn't have to be static?
 {
     fn on_new_span(&self, attrs: &Attributes, id: &Id, ctx: Context<S>) {
         let span = ctx.span(id).expect("in new_span but span does not exist");
@@ -305,6 +324,13 @@ where
         let mut guard = self.bufs.lock().unwrap();
         let bufs = &mut *guard;
         let mut event_buf = &mut bufs.current_buf;
+
+        // Time.
+
+        // TODO(TmLev): Error handling?
+        self.timer
+            .format_time(&mut event_buf)
+            .expect("Unable to write time to buffer");
 
         // printing the indentation
         let indent = ctx

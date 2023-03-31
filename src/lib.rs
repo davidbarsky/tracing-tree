@@ -331,6 +331,7 @@ where
         self.timer
             .format_time(&mut event_buf)
             .expect("Unable to write time to buffer");
+        write!(event_buf, " ").expect("Unable to write to buffer");
 
         // printing the indentation
         let indent = ctx

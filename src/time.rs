@@ -33,6 +33,19 @@ impl FormatTime for () {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/// Retrieve and print the current wall-clock time in UTC timezone.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
+pub struct UtcDateTime;
+
+impl FormatTime for UtcDateTime {
+    fn format_time(&self, w: &mut impl std::fmt::Write) -> std::fmt::Result {
+        let time = time::OffsetDateTime::now_utc();
+        write!(w, "{} {}", time.date(), time.time())
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /// Retrieve and print the current wall-clock time.
 ///
 /// # Panics

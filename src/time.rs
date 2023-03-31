@@ -3,9 +3,9 @@
 /// This trait is used by [HierarchicalLayer] to include a timestamp with each
 /// [Event] when it is logged.
 ///
-/// Notable default implementations of this trait are [OffsetDateTime] and `()`.
+/// Notable default implementations of this trait are [LocalDateTime] and `()`.
 /// The former prints the current time as reported by [time's OffsetDateTime]
-/// (note that it may panic! make sure to check out the docs for the [OffsetDateTime]),
+/// (note that it may panic! make sure to check out the docs for the [LocalDateTime]),
 /// and the latter does not print the current time at all.
 ///
 /// Inspired by the [FormatTime] trait from [tracing-subscriber].
@@ -44,9 +44,9 @@ impl FormatTime for () {
 //   Can't use `tracing_subscriber::fmt::time::SystemTime` since it uses
 //   private `datetime` module to format the actual time.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
-pub struct OffsetDateTime;
+pub struct LocalDateTime;
 
-impl FormatTime for OffsetDateTime {
+impl FormatTime for LocalDateTime {
     fn format_time(&self, w: &mut impl std::fmt::Write) -> std::fmt::Result {
         let time = time::OffsetDateTime::now_local().expect("time offset cannot be determined");
         write!(w, "{}", time)

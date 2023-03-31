@@ -81,7 +81,7 @@ impl From<std::time::Instant> for Uptime {
 impl FormatTime for Uptime {
     fn format_time(&self, w: &mut impl std::fmt::Write) -> std::fmt::Result {
         let e = self.epoch.elapsed();
-        write!(w, "{:4}.{:09}s", e.as_secs(), e.subsec_nanos())
+        write!(w, "{:4}.{:06}s", e.as_secs(), e.subsec_micros())
     }
 }
 

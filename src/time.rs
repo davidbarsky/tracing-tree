@@ -5,7 +5,8 @@
 ///
 /// Notable default implementations of this trait are [LocalDateTime] and `()`.
 /// The former prints the current time as reported by [time's OffsetDateTime]
-/// (note that it may panic! make sure to check out the docs for the [LocalDateTime]),
+/// (note that it requires a `time` feature to be enabled and may panic!
+/// make sure to check out the docs for the [LocalDateTime]),
 /// and the latter does not print the current time at all.
 ///
 /// Inspired by the [FormatTime] trait from [tracing-subscriber].
@@ -34,9 +35,11 @@ impl FormatTime for () {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// Retrieve and print the current wall-clock time in UTC timezone.
+#[cfg(feature = "time")]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct UtcDateTime;
 
+#[cfg(feature = "time")]
 impl FormatTime for UtcDateTime {
     fn format_time(&self, w: &mut impl std::fmt::Write) -> std::fmt::Result {
         let time = time::OffsetDateTime::now_utc();
@@ -56,9 +59,11 @@ impl FormatTime for UtcDateTime {
 // NB:
 //   Can't use `tracing_subscriber::fmt::time::SystemTime` since it uses
 //   private `datetime` module to format the actual time.
+#[cfg(feature = "time")]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct LocalDateTime;
 
+#[cfg(feature = "time")]
 impl FormatTime for LocalDateTime {
     fn format_time(&self, w: &mut impl std::fmt::Write) -> std::fmt::Result {
         let time = time::OffsetDateTime::now_local().expect("time offset cannot be determined");

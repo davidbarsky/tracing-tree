@@ -327,10 +327,18 @@ where
 
         // Time.
 
-        self.timer
-            .format_time(&mut event_buf)
-            .expect("Unable to write time to buffer");
-        write!(event_buf, " ").expect("Unable to write to buffer");
+        {
+            let prev_buffer_len = event_buf.len();
+
+            self.timer
+                .format_time(&mut event_buf)
+                .expect("Unable to write time to buffer");
+
+            // Something was written to the buffer, pad it with a space.
+            if prev_buffer_len < event_buf.len() {
+                write!(event_buf, " ").expect("Unable to write to buffer");
+            }
+        }
 
         // printing the indentation
         let indent = ctx

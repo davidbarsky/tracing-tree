@@ -296,7 +296,7 @@ impl<S, W, FT> Layer<S> for HierarchicalLayer<W, FT>
 where
     S: Subscriber + for<'span> LookupSpan<'span>,
     W: for<'writer> MakeWriter<'writer> + 'static,
-    FT: FormatTime + 'static, // TODO(TmLev): Maybe it doesn't have to be static?
+    FT: FormatTime + 'static,
 {
     fn on_new_span(&self, attrs: &Attributes, id: &Id, ctx: Context<S>) {
         let span = ctx.span(id).expect("in new_span but span does not exist");
@@ -327,7 +327,6 @@ where
 
         // Time.
 
-        // TODO(TmLev): Error handling?
         self.timer
             .format_time(&mut event_buf)
             .expect("Unable to write time to buffer");

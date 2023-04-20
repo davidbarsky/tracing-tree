@@ -364,11 +364,21 @@ where
         };
         if let Some(start) = start {
             let elapsed = start.elapsed();
+            let millis = elapsed.as_millis();
+            let secs = elapsed.as_secs();
+            let (n, unit) = if millis < 1000 {
+                (millis as _, "ms")
+            } else if secs < 60 {
+                (secs, "s ")
+            } else {
+                (secs / 60, "m ")
+            };
+            let n = format!("{n:>3}");
             write!(
                 &mut event_buf,
                 "{timestamp}{unit} ",
-                timestamp = self.styled(Style::new().dimmed(), elapsed.as_millis().to_string()),
-                unit = self.styled(Style::new().dimmed(), "ms"),
+                timestamp = self.styled(Style::new().dimmed(), n),
+                unit = self.styled(Style::new().dimmed(), unit),
             )
             .expect("Unable to write to buffer");
         }

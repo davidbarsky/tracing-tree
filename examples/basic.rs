@@ -24,7 +24,7 @@ fn main() {
     let server_span = span!(Level::TRACE, "server", host = "localhost", port = 8080);
     let _e2 = server_span.enter();
     info!("starting");
-    std::thread::sleep(std::time::Duration::from_millis(300));
+    std::thread::sleep(std::time::Duration::from_millis(3000));
     info!("listening");
     let peer1 = span!(Level::TRACE, "conn", peer_addr = "82.9.9.9", port = 42381);
     peer1.in_scope(|| {

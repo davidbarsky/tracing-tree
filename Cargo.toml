@@ -22,7 +22,7 @@ default = ["tracing-log"]
 [dev-dependencies]
 tracing = "0.1"
 glob = "0.3"
-assert_cmd = "1"
+ui_test = "0.7"
 log = "0.4"
 
 [[test]]

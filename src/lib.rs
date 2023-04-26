@@ -4,6 +4,7 @@ pub mod time;
 use crate::time::FormatTime;
 use format::{Buffers, ColorLevel, Config, FmtEvent, SpanMode};
 
+use is_terminal::IsTerminal;
 use nu_ansi_term::{Color, Style};
 use std::{
     fmt::{self, Write as _},
@@ -65,7 +66,7 @@ impl Default for HierarchicalLayer {
 
 impl HierarchicalLayer<fn() -> io::Stderr> {
     pub fn new(indent_amount: usize) -> Self {
-        let ansi = atty::is(atty::Stream::Stderr);
+        let ansi = io::stderr().is_terminal();
         let config = Config {
             ansi,
             indent_amount,

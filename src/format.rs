@@ -418,6 +418,7 @@ fn indent_block(
         let indent_str = String::from(" ").repeat(indent_spaces);
         for line in lines {
             buf.push_str(prefix);
+            buf.push(' ');
             buf.push_str(&indent_str);
             buf.push_str(line);
             buf.push('\n');

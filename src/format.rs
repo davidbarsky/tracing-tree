@@ -13,6 +13,7 @@ const LINE_HORIZ: &str = "─";
 pub(crate) const LINE_BRANCH: &str = "├";
 pub(crate) const LINE_CLOSE: &str = "┘";
 pub(crate) const LINE_OPEN: &str = "┐";
+pub(crate) const ARGS_BRANCH: &str = "┬";
 
 #[derive(Copy, Clone)]
 pub(crate) enum SpanMode {
@@ -227,7 +228,7 @@ pub struct FmtEvent<'a> {
 impl<'a> Visit for FmtEvent<'a> {
     fn record_debug(&mut self, field: &Field, value: &dyn fmt::Debug) {
         let buf = &mut self.bufs.current_buf;
-        let comma = if self.comma { "," } else { "" };
+        let comma = if self.comma { "\n" } else { "" };
         match field.name() {
             "message" => {
                 write!(buf, "{} {:?}", comma, value).unwrap();
@@ -372,6 +373,12 @@ fn indent_block_with_lines(
         }
         SpanMode::Event => {
             buf.push_str(LINE_BRANCH);
+            if lines.len() > 1 {
+                for _ in 0..(indent_amount - 1) {
+                    buf.push_str(LINE_HORIZ);
+                }
+                buf.push_str(ARGS_BRANCH);
+            }
 
             // add `indent_amount - 1` horizontal lines before the span/event
             for _ in 0..(indent_amount - 1) {
@@ -393,8 +400,16 @@ fn indent_block_with_lines(
     }
 
     // add all of the actual content, with each line preceded by the indent string
-    for line in &lines[1..] {
+    for (i, line) in lines[1..].iter().enumerate() {
         buf.push_str(&s);
+        // Magic number `2` means "last entry" because we iterate from `1`
+        // and then restart indexing at `0`.
+        if i == lines.len() - 2 {
+            buf.push_str("└");
+        } else {
+            buf.push_str(LINE_BRANCH);
+        }
+        buf.push_str(LINE_HORIZ);
         buf.push_str(line);
         buf.push('\n');
     }

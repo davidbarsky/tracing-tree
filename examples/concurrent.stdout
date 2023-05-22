@@ -5,12 +5,20 @@
 1:main    ├─── DEBUG concurrent starting countdowns
 1:main    └───┐concurrent::countdowns 
 1:main        └───┐concurrent::countdown_a 
-1:main            ├─── DEBUG concurrent polling countdown, label="a", count=3
+1:main            ├───┬─── DEBUG concurrent polling countdown
+1:main            │   ├─ label="a"
+1:main            │   └─ count=3
 1:main        └───┐concurrent::countdown_b 
-1:main            ├─── DEBUG concurrent polling countdown, label="b", count=5
-1:main            ├─── DEBUG concurrent polling countdown, label="b", count=4
+1:main            ├───┬─── DEBUG concurrent polling countdown
+1:main            │   ├─ label="b"
+1:main            │   └─ count=5
+1:main            ├───┬─── DEBUG concurrent polling countdown
+1:main            │   ├─ label="b"
+1:main            │   └─ count=4
 1:main        └───┐concurrent::countdown_a 
-1:main            ├─── DEBUG concurrent polling countdown, label="a", count=2
+1:main            ├───┬─── DEBUG concurrent polling countdown
+1:main            │   ├─ label="a"
+1:main            │   └─ count=2
 1:main    └───┐concurrent::conn peer_addr="82.9.9.9", port=42381
 1:main        ├─── WARN concurrent peer1 warning
 1:main    └───┐concurrent::countdowns 

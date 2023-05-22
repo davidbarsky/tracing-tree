@@ -6,7 +6,8 @@
 1:main  └┐basic_verbose_entry::server host="localhost", port=8080
 1:main   └┐basic_verbose_entry::conn peer_addr="82.9.9.9", port=42381
 1:main    ├─ DEBUG basic_verbose_entry connected
-1:main    ├─ DEBUG basic_verbose_entry message received, length=2
+1:main    ├─┬─ DEBUG basic_verbose_entry message received
+1:main    │ └─ length=2
 1:main  ┌─┘
 1:main  └┐basic_verbose_entry::server host="localhost", port=8080
 1:main   └┐basic_verbose_entry::conn peer_addr="8.8.8.8", port=18230
@@ -18,14 +19,18 @@
 1:main  ┌─┘
 1:main  └┐basic_verbose_entry::server host="localhost", port=8080
 1:main   └┐basic_verbose_entry::conn peer_addr="82.9.9.9", port=42381
-1:main    ├─ WARN basic_verbose_entry weak encryption requested, algo="xor"
-1:main    ├─ DEBUG basic_verbose_entry response sent, length=8
+1:main    ├─┬─ WARN basic_verbose_entry weak encryption requested
+1:main    │ └─ algo="xor"
+1:main    ├─┬─ DEBUG basic_verbose_entry response sent
+1:main    │ └─ length=8
 1:main    ├─ DEBUG basic_verbose_entry disconnected
 1:main  ┌─┘
 1:main  └┐basic_verbose_entry::server host="localhost", port=8080
 1:main   └┐basic_verbose_entry::conn peer_addr="8.8.8.8", port=18230
-1:main    ├─ DEBUG basic_verbose_entry message received, length=5
-1:main    ├─ DEBUG basic_verbose_entry response sent, length=8
+1:main    ├─┬─ DEBUG basic_verbose_entry message received
+1:main    │ └─ length=5
+1:main    ├─┬─ DEBUG basic_verbose_entry response sent
+1:main    │ └─ length=8
 1:main    ├─ DEBUG basic_verbose_entry disconnected
 1:main  ┌─┘
 1:main  ├─ WARN basic_verbose_entry internal error

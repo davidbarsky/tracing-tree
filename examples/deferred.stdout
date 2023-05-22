@@ -7,13 +7,16 @@
 1:main  └┐pre_open: deferred::server host="localhost", port=8080
 1:main   └┐open(v): deferred::connections 
 1:main    └─┐open: deferred::conn peer_addr="82.9.9.9", port=42381
-1:main      ├─ DEBUG deferred connected, peer="peer1"
-1:main      ├─ DEBUG deferred message received, length=2
+1:main      ├─┬─ DEBUG deferred connected
+1:main      │ └─ peer="peer1"
+1:main      ├─┬─ DEBUG deferred message received
+1:main      │ └─ length=2
 1:main     ┌┘close(v): deferred::conn peer_addr="82.9.9.9", port=42381
 1:main    ┌┘post_close: deferred::connections 
 1:main    └┐pre_open: deferred::connections 
 1:main     └┐open(v): deferred::conn peer_addr="8.8.8.8", port=18230
-1:main      ├─ DEBUG deferred connected, peer="peer3"
+1:main      ├─┬─ DEBUG deferred connected
+1:main      │ └─ peer="peer3"
 1:main     ┌┘close(v): deferred::conn peer_addr="8.8.8.8", port=18230
 1:main    ┌┘post_close: deferred::connections 
 1:main    └┐pre_open: deferred::connections 
@@ -23,15 +26,19 @@
 1:main    ┌┘post_close: deferred::connections 
 1:main    └┐pre_open: deferred::connections 
 1:main     └┐open(v): deferred::conn peer_addr="82.9.9.9", port=42381
-1:main      ├─ WARN deferred weak encryption requested, algo="xor"
-1:main      ├─ DEBUG deferred response sent, length=8
+1:main      ├─┬─ WARN deferred weak encryption requested
+1:main      │ └─ algo="xor"
+1:main      ├─┬─ DEBUG deferred response sent
+1:main      │ └─ length=8
 1:main      ├─ DEBUG deferred disconnected
 1:main     ┌┘close(v): deferred::conn peer_addr="82.9.9.9", port=42381
 1:main    ┌┘post_close: deferred::connections 
 1:main    └┐pre_open: deferred::connections 
 1:main     └┐open(v): deferred::conn peer_addr="8.8.8.8", port=18230
-1:main      ├─ DEBUG deferred message received, length=5
-1:main      ├─ DEBUG deferred response sent, length=8
+1:main      ├─┬─ DEBUG deferred message received
+1:main      │ └─ length=5
+1:main      ├─┬─ DEBUG deferred response sent
+1:main      │ └─ length=8
 1:main      ├─ DEBUG deferred disconnected
 1:main     ┌┘close(v): deferred::conn peer_addr="8.8.8.8", port=18230
 1:main    ┌┘post_close: deferred::connections 

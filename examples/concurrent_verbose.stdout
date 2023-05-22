@@ -6,14 +6,22 @@
 1:main    └─┐concurrent_verbose::server host="localhost", port=8080
 1:main      └─┐concurrent_verbose::countdowns 
 1:main        └───┐concurrent_verbose::countdown_a 
-1:main            ├─── DEBUG concurrent_verbose polling countdown, label="a", count=3
+1:main            ├───┬─── DEBUG concurrent_verbose polling countdown
+1:main            │   ├─ label="a"
+1:main            │   └─ count=3
 1:main        └─┐concurrent_verbose::countdowns 
 1:main          └─┐concurrent_verbose::countdown_b 
-1:main            ├─── DEBUG concurrent_verbose polling countdown, label="b", count=5
-1:main            ├─── DEBUG concurrent_verbose polling countdown, label="b", count=4
+1:main            ├───┬─── DEBUG concurrent_verbose polling countdown
+1:main            │   ├─ label="b"
+1:main            │   └─ count=5
+1:main            ├───┬─── DEBUG concurrent_verbose polling countdown
+1:main            │   ├─ label="b"
+1:main            │   └─ count=4
 1:main        └─┐concurrent_verbose::countdowns 
 1:main          └─┐concurrent_verbose::countdown_a 
-1:main            ├─── DEBUG concurrent_verbose polling countdown, label="a", count=2
+1:main            ├───┬─── DEBUG concurrent_verbose polling countdown
+1:main            │   ├─ label="a"
+1:main            │   └─ count=2
 1:main    └─┐concurrent_verbose::server host="localhost", port=8080
 1:main      └─┐concurrent_verbose::conn peer_addr="82.9.9.9", port=42381
 1:main        ├─── WARN concurrent_verbose peer1 warning

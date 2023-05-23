@@ -272,24 +272,20 @@ impl Buffers {
 
 pub struct FmtEvent<'a> {
     pub bufs: &'a mut Buffers,
-    pub comma: bool,
 }
 
 impl<'a> Visit for FmtEvent<'a> {
     fn record_debug(&mut self, field: &Field, value: &dyn fmt::Debug) {
         let buf = &mut self.bufs.current_buf;
-        let comma = if self.comma { "\n" } else { "" };
         match field.name() {
             "message" => {
-                write!(buf, "{} {:?}", comma, value).unwrap();
-                self.comma = true;
+                write!(buf, " {:?}", value).unwrap();
             }
             // Skip fields that are actually log metadata that have already been handled
             #[cfg(feature = "tracing-log")]
             name if name.starts_with("log.") => {}
             name => {
-                write!(buf, "{} {}={:?}", comma, name, value).unwrap();
-                self.comma = true;
+                write!(buf, "\n {}={:?}", name, value).unwrap();
             }
         }
     }

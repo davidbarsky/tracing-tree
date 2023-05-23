@@ -1,15 +1,19 @@
-1:main┐basic_non_verbose::hierarchical-example version=0.1
-1:main└─┬─┬─ basic_non_verbose::server host="localhost"
+1:main┐basic_non_verbose::hierarchical-example
+1:main┐ version=0.1
+1:main└─┬─┬─ basic_non_verbose::server
+1:main  │ ├─ host="localhost"
 1:main  │ └─ port=8080
 1:main  ├─ INFO basic_non_verbose starting
 1:main  ├─ INFO basic_non_verbose listening
-1:main  └─┬─┬─ basic_non_verbose::conn peer_addr="82.9.9.9"
+1:main  └─┬─┬─ basic_non_verbose::conn
+1:main    │ ├─ peer_addr="82.9.9.9"
 1:main    │ └─ port=42381
 1:main    ├─ DEBUG basic_non_verbose connected
 1:main    ├─┬─ DEBUG basic_non_verbose message received
 1:main    │ └─ length=2
 1:main  ┌─┘
-1:main  └─┬─┬─ basic_non_verbose::conn peer_addr="8.8.8.8"
+1:main  └─┬─┬─ basic_non_verbose::conn
+1:main    │ ├─ peer_addr="8.8.8.8"
 1:main    │ └─ port=18230
 1:main    ├─ DEBUG basic_non_verbose connected
 1:main  ┌─┘
@@ -17,7 +21,8 @@
 1:main    │ └─ normal_var=43
 1:main    ├─ ERROR basic_non_verbose hello
 1:main  ┌─┘
-1:main  └─┬─┬─ basic_non_verbose::conn peer_addr="82.9.9.9"
+1:main  └─┬─┬─ basic_non_verbose::conn
+1:main    │ ├─ peer_addr="82.9.9.9"
 1:main    │ └─ port=42381
 1:main    ├─┬─ WARN basic_non_verbose weak encryption requested
 1:main    │ └─ algo="xor"
@@ -25,7 +30,8 @@
 1:main    │ └─ length=8
 1:main    ├─ DEBUG basic_non_verbose disconnected
 1:main  ┌─┘
-1:main  └─┬─┬─ basic_non_verbose::conn peer_addr="8.8.8.8"
+1:main  └─┬─┬─ basic_non_verbose::conn
+1:main    │ ├─ peer_addr="8.8.8.8"
 1:main    │ └─ port=18230
 1:main    ├─┬─ DEBUG basic_non_verbose message received
 1:main    │ └─ length=5

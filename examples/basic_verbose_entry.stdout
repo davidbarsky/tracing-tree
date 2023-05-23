@@ -1,32 +1,42 @@
-1:main┐basic_verbose_entry::hierarchical-example version=0.1
-1:main└┐basic_verbose_entry::hierarchical-example version=0.1
-1:main └┬─┬─ basic_verbose_entry::server host="localhost"
+1:main┐basic_verbose_entry::hierarchical-example
+1:main┐ version=0.1
+1:main└┬─┬─ basic_verbose_entry::hierarchical-example
+1:main │ └─ version=0.1
+1:main └┬─┬─ basic_verbose_entry::server
+1:main  │ ├─ host="localhost"
 1:main  │ └─ port=8080
 1:main  ├─ INFO basic_verbose_entry starting
 1:main  ├─ INFO basic_verbose_entry listening
-1:main  └┬─┬─ basic_verbose_entry::server host="localhost"
+1:main  └┬─┬─ basic_verbose_entry::server
+1:main   │ ├─ host="localhost"
 1:main   │ └─ port=8080
-1:main   └┬─┬─ basic_verbose_entry::conn peer_addr="82.9.9.9"
+1:main   └┬─┬─ basic_verbose_entry::conn
+1:main    │ ├─ peer_addr="82.9.9.9"
 1:main    │ └─ port=42381
 1:main    ├─ DEBUG basic_verbose_entry connected
 1:main    ├─┬─ DEBUG basic_verbose_entry message received
 1:main    │ └─ length=2
 1:main  ┌─┘
-1:main  └┬─┬─ basic_verbose_entry::server host="localhost"
+1:main  └┬─┬─ basic_verbose_entry::server
+1:main   │ ├─ host="localhost"
 1:main   │ └─ port=8080
-1:main   └┬─┬─ basic_verbose_entry::conn peer_addr="8.8.8.8"
+1:main   └┬─┬─ basic_verbose_entry::conn
+1:main    │ ├─ peer_addr="8.8.8.8"
 1:main    │ └─ port=18230
 1:main    ├─ DEBUG basic_verbose_entry connected
 1:main  ┌─┘
-1:main  └┬─┬─ basic_verbose_entry::server host="localhost"
+1:main  └┬─┬─ basic_verbose_entry::server
+1:main   │ ├─ host="localhost"
 1:main   │ └─ port=8080
 1:main   └┬─┬─ basic_verbose_entry::foomp 42 <- format string
 1:main    │ └─ normal_var=43
 1:main    ├─ ERROR basic_verbose_entry hello
 1:main  ┌─┘
-1:main  └┬─┬─ basic_verbose_entry::server host="localhost"
+1:main  └┬─┬─ basic_verbose_entry::server
+1:main   │ ├─ host="localhost"
 1:main   │ └─ port=8080
-1:main   └┬─┬─ basic_verbose_entry::conn peer_addr="82.9.9.9"
+1:main   └┬─┬─ basic_verbose_entry::conn
+1:main    │ ├─ peer_addr="82.9.9.9"
 1:main    │ └─ port=42381
 1:main    ├─┬─ WARN basic_verbose_entry weak encryption requested
 1:main    │ └─ algo="xor"
@@ -34,9 +44,11 @@
 1:main    │ └─ length=8
 1:main    ├─ DEBUG basic_verbose_entry disconnected
 1:main  ┌─┘
-1:main  └┬─┬─ basic_verbose_entry::server host="localhost"
+1:main  └┬─┬─ basic_verbose_entry::server
+1:main   │ ├─ host="localhost"
 1:main   │ └─ port=8080
-1:main   └┬─┬─ basic_verbose_entry::conn peer_addr="8.8.8.8"
+1:main   └┬─┬─ basic_verbose_entry::conn
+1:main    │ ├─ peer_addr="8.8.8.8"
 1:main    │ └─ port=18230
 1:main    ├─┬─ DEBUG basic_verbose_entry message received
 1:main    │ └─ length=5

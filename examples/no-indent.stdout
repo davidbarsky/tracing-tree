@@ -1,0 +1,21 @@
+1:main no_indent::hierarchical-example version=0.1
+1:main   no_indent::server host="localhost", port=8080
+1:main       Xms INFO no_indent starting
+1:main       Xms INFO no_indent listening
+1:main     no_indent::conn peer_addr="82.9.9.9", port=42381
+1:main         Xms DEBUG no_indent connected
+1:main         Xms DEBUG no_indent message received, length=2
+1:main     no_indent::conn peer_addr="8.8.8.8", port=18230
+1:main         Xms DEBUG no_indent connected
+1:main     no_indent::foomp 42 <- format string, normal_var=43
+1:main         Xms ERROR no_indent hello
+1:main     no_indent::conn peer_addr="82.9.9.9", port=42381
+1:main         Xms WARN no_indent weak encryption requested, algo="xor"
+1:main         Xms DEBUG no_indent response sent, length=8
+1:main         Xms DEBUG no_indent disconnected
+1:main     no_indent::conn peer_addr="8.8.8.8", port=18230
+1:main         Xms DEBUG no_indent message received, length=5
+1:main         Xms DEBUG no_indent response sent, length=8
+1:main         Xms DEBUG no_indent disconnected
+1:main       Xs  WARN no_indent internal error
+1:main       Xs  INFO no_indent exit

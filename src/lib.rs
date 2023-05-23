@@ -254,7 +254,7 @@ where
             }
         }
         for (k, v) in kvs {
-            write!(buf, ", {}={}", k, v)?;
+            write!(buf, "\n {}={}", k, v)?;
         }
         Ok(())
     }

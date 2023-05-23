@@ -1,5 +1,6 @@
 1:main┐concurrent::hierarchical-example version=0.1
-1:main└───┐concurrent::server host="localhost", port=8080
+1:main└───┬───┬─── concurrent::server host="localhost"
+1:main    │   └─ port=8080
 1:main    ├─── INFO concurrent starting
 1:main    ├─── INFO concurrent listening
 1:main    ├─── DEBUG concurrent starting countdowns
@@ -19,7 +20,8 @@
 1:main            ├───┬─── DEBUG concurrent polling countdown
 1:main            │   ├─ label="a"
 1:main            │   └─ count=2
-1:main    └───┐concurrent::conn peer_addr="82.9.9.9", port=42381
+1:main    └───┬───┬─── concurrent::conn peer_addr="82.9.9.9"
+1:main        │   └─ port=42381
 1:main        ├─── WARN concurrent peer1 warning
 1:main    └───┐concurrent::countdowns 
 1:main        ├─── INFO concurrent finished polling countdowns

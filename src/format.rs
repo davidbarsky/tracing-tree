@@ -374,14 +374,44 @@ fn indent_block_with_lines(
             for _ in 1..(indent_amount / 2) {
                 buf.push_str(LINE_HORIZ);
             }
-            buf.push_str(LINE_OPEN);
+            if lines.len() > 1 {
+                buf.push_str(ARGS_BRANCH);
+                for _ in 1..indent_amount {
+                    buf.push_str(LINE_HORIZ);
+                }
+                buf.push_str(ARGS_BRANCH);
+                for _ in 1..indent_amount {
+                    buf.push_str(LINE_HORIZ);
+                }
+                buf.push(' ');
+                for _ in 0..(indent_amount - 1) {
+                    s.push(' ');
+                }
+            } else {
+                buf.push_str(LINE_OPEN);
+            }
         }
         SpanMode::Open { verbose: false } | SpanMode::Retrace { verbose: false } => {
             buf.push(LINE_OPEN2);
             for _ in 1..indent_amount {
                 buf.push_str(LINE_HORIZ);
             }
-            buf.push_str(LINE_OPEN);
+            if lines.len() > 1 {
+                buf.push_str(ARGS_BRANCH);
+                for _ in 1..indent_amount {
+                    buf.push_str(LINE_HORIZ);
+                }
+                buf.push_str(ARGS_BRANCH);
+                for _ in 1..indent_amount {
+                    buf.push_str(LINE_HORIZ);
+                }
+                buf.push_str(" ");
+                for _ in 0..indent_amount {
+                    s.push(' ');
+                }
+            } else {
+                buf.push_str(LINE_OPEN);
+            }
         }
         SpanMode::Open { verbose: true } | SpanMode::Retrace { verbose: true } => {
             buf.push(' ');
@@ -397,7 +427,22 @@ fn indent_block_with_lines(
             }
             // We don't have the space for fancy rendering at single space indent.
             if indent_amount > 1 {
-                buf.push_str(LINE_OPEN);
+                if lines.len() > 1 {
+                    buf.push_str(ARGS_BRANCH);
+                    for _ in 1..indent_amount {
+                        buf.push_str(LINE_HORIZ);
+                    }
+                    buf.push_str(ARGS_BRANCH);
+                    for _ in 1..indent_amount {
+                        buf.push_str(LINE_HORIZ);
+                    }
+                    buf.push_str(" ");
+                    for _ in 0..indent_amount {
+                        s.push(' ');
+                    }
+                } else {
+                    buf.push_str(LINE_OPEN);
+                }
             } else {
                 buf.push(' ');
             }
@@ -423,7 +468,22 @@ fn indent_block_with_lines(
             }
             // We don't have the space for fancy rendering at single space indent.
             if indent_amount > 1 {
-                buf.push_str(LINE_CLOSE);
+                if lines.len() > 1 {
+                    buf.push('┴');
+                    for _ in 1..indent_amount - 1 {
+                        buf.push_str(LINE_HORIZ);
+                    }
+                    buf.push('┬');
+                    for _ in 1..indent_amount {
+                        buf.push_str(LINE_HORIZ);
+                    }
+                    buf.push_str(" ");
+                    for _ in 0..indent_amount - 1 {
+                        s.push(' ');
+                    }
+                } else {
+                    buf.push_str(LINE_CLOSE);
+                }
             } else {
                 buf.push(' ');
             }
@@ -433,7 +493,22 @@ fn indent_block_with_lines(
             for _ in 1..(indent_amount / 2) {
                 buf.push_str(LINE_HORIZ);
             }
-            buf.push_str(LINE_CLOSE);
+            if lines.len() > 1 {
+                buf.push('┴');
+                for _ in 1..indent_amount - 1 {
+                    buf.push_str(LINE_HORIZ);
+                }
+                buf.push('┬');
+                for _ in 1..indent_amount {
+                    buf.push_str(LINE_HORIZ);
+                }
+                buf.push(' ');
+                for _ in 0..indent_amount - 2 {
+                    s.push(' ');
+                }
+            } else {
+                buf.push_str(LINE_CLOSE);
+            }
         }
         SpanMode::Event => {
             buf.push_str(LINE_BRANCH);

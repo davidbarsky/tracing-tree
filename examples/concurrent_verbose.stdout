@@ -1,9 +1,11 @@
 1:main┐concurrent_verbose::hierarchical-example version=0.1
-1:main└───┐concurrent_verbose::server host="localhost", port=8080
+1:main└───┬───┬─── concurrent_verbose::server host="localhost"
+1:main    │   └─ port=8080
 1:main    ├─── INFO concurrent_verbose starting
 1:main    ├─── INFO concurrent_verbose listening
 1:main    ├─── DEBUG concurrent_verbose starting countdowns
-1:main    └─┐concurrent_verbose::server host="localhost", port=8080
+1:main    └─┬───┬─── concurrent_verbose::server host="localhost"
+1:main       │   └─ port=8080
 1:main      └─┐concurrent_verbose::countdowns 
 1:main        └───┐concurrent_verbose::countdown_a 
 1:main            ├───┬─── DEBUG concurrent_verbose polling countdown
@@ -22,10 +24,13 @@
 1:main            ├───┬─── DEBUG concurrent_verbose polling countdown
 1:main            │   ├─ label="a"
 1:main            │   └─ count=2
-1:main    └─┐concurrent_verbose::server host="localhost", port=8080
-1:main      └─┐concurrent_verbose::conn peer_addr="82.9.9.9", port=42381
+1:main    └─┬───┬─── concurrent_verbose::server host="localhost"
+1:main       │   └─ port=8080
+1:main      └─┬───┬─── concurrent_verbose::conn peer_addr="82.9.9.9"
+1:main        │   └─ port=42381
 1:main        ├─── WARN concurrent_verbose peer1 warning
-1:main    └─┐concurrent_verbose::server host="localhost", port=8080
+1:main    └─┬───┬─── concurrent_verbose::server host="localhost"
+1:main       │   └─ port=8080
 1:main      └─┐concurrent_verbose::countdowns 
 1:main        ├─── INFO concurrent_verbose finished polling countdowns
 1:main          ┌─┘concurrent_verbose::countdown_b 
@@ -33,11 +38,15 @@
 1:main          ┌─┘concurrent_verbose::countdown_a 
 1:main        ┌─┘concurrent_verbose::countdowns 
 1:main      ┌─┘concurrent_verbose::countdowns 
-1:main    ┌─┘concurrent_verbose::server host="localhost", port=8080
-1:main      ┌─┘concurrent_verbose::conn peer_addr="82.9.9.9", port=42381
-1:main    ┌─┘concurrent_verbose::server host="localhost", port=8080
+1:main    ┌─┴──┬─── concurrent_verbose::server host="localhost"
+1:main      │   └─ port=8080
+1:main      ┌─┴──┬─── concurrent_verbose::conn peer_addr="82.9.9.9"
+1:main       │   └─ port=42381
+1:main    ┌─┴──┬─── concurrent_verbose::server host="localhost"
+1:main      │   └─ port=8080
 1:main    ├─── INFO concurrent_verbose all done!
 1:main    ├─── INFO concurrent_verbose exit
-1:main  ┌─┘concurrent_verbose::server host="localhost", port=8080
+1:main  ┌─┴──┬─── concurrent_verbose::server host="localhost"
+1:main   │   └─ port=8080
 1:main┌─┘concurrent_verbose::hierarchical-example version=0.1
 1:main┘concurrent_verbose::hierarchical-example version=0.1

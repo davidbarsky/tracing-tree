@@ -246,16 +246,18 @@ where
         V: fmt::Display + 'a,
     {
         let mut kvs = kvs.into_iter();
-        let nl = if self.config.bracketed_fields {
-            ""
+        let (nl, first) = if self.config.bracketed_fields {
+            ("", "")
+        } else if self.config.indent_lines {
+            ("\n ", "\n ")
         } else {
-            "\n "
+            (", ", " ")
         };
         if let Some((k, v)) = kvs.next() {
             if k == "message" {
                 write!(buf, " {}", v)?;
             } else {
-                write!(buf, "{nl}{}={}", k, v)?;
+                write!(buf, "{first}{}={}", k, v)?;
             }
         }
         for (k, v) in kvs {
@@ -560,7 +562,10 @@ where
             .expect("Unable to write to buffer");
         }
 
-        let mut visitor = FmtEvent { bufs };
+        let mut visitor = FmtEvent {
+            bufs,
+            lines: self.config.indent_lines,
+        };
         event.record(&mut visitor);
         visitor
             .bufs

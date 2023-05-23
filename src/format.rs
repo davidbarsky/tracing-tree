@@ -272,6 +272,7 @@ impl Buffers {
 
 pub struct FmtEvent<'a> {
     pub bufs: &'a mut Buffers,
+    pub lines: bool,
 }
 
 impl<'a> Visit for FmtEvent<'a> {
@@ -285,7 +286,12 @@ impl<'a> Visit for FmtEvent<'a> {
             #[cfg(feature = "tracing-log")]
             name if name.starts_with("log.") => {}
             name => {
-                write!(buf, "\n {}={:?}", name, value).unwrap();
+                if self.lines {
+                    write!(buf, "\n ").unwrap()
+                } else {
+                    write!(buf, ", ").unwrap()
+                }
+                write!(buf, "{}={:?}", name, value).unwrap();
             }
         }
     }

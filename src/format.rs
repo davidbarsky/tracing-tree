@@ -303,7 +303,7 @@ fn indent_block_with_lines(
                 for _ in 1..indent_amount {
                     buf.push_str(LINE_HORIZ);
                 }
-                buf.push_str(" ");
+                buf.push(' ');
                 for i in 0..(indent_amount - 1) {
                     indent(&mut s, i)
                 }
@@ -327,7 +327,7 @@ fn indent_block_with_lines(
                 for _ in 1..indent_amount {
                     buf.push_str(LINE_HORIZ);
                 }
-                buf.push_str(" ");
+                buf.push(' ');
 
                 if indent_spaces != 0 {
                     for i in 0..indent_amount {
@@ -363,7 +363,7 @@ fn indent_block_with_lines(
                     for _ in 1..indent_amount {
                         buf.push_str(LINE_HORIZ);
                     }
-                    buf.push_str(" ");
+                    buf.push(' ');
                     if indent_spaces != 0 {
                         for i in 0..indent_amount {
                             indent(&mut s, i)
@@ -402,15 +402,15 @@ fn indent_block_with_lines(
             // We don't have the space for fancy rendering at single space indent.
             if indent_amount > 1 {
                 if lines.len() > 1 {
-                    buf.push_str("┴");
+                    buf.push('┴');
                     for _ in 1..indent_amount - 1 {
                         buf.push_str(LINE_HORIZ);
                     }
-                    buf.push_str("┬");
+                    buf.push('┬');
                     for _ in 1..indent_amount {
                         buf.push_str(LINE_HORIZ);
                     }
-                    buf.push_str(" ");
+                    buf.push(' ');
 
                     if indent_spaces != 0 {
                         for i in 0..indent_amount - 1 {
@@ -430,15 +430,15 @@ fn indent_block_with_lines(
                 buf.push_str(LINE_HORIZ);
             }
             if lines.len() > 1 {
-                buf.push_str("┴");
+                buf.push('┴');
                 for _ in 1..indent_amount - 1 {
                     buf.push_str(LINE_HORIZ);
                 }
-                buf.push_str("┬");
+                buf.push('┬');
                 for _ in 1..indent_amount {
                     buf.push_str(LINE_HORIZ);
                 }
-                buf.push_str(" ");
+                buf.push(' ');
                 for i in 0..indent_amount - 2 {
                     indent(&mut s, i)
                 }
@@ -489,7 +489,7 @@ fn indent_block_with_lines(
         // Magic number `2` means "last entry" because we iterate from `1`
         // and then restart indexing at `0`.
         if i == lines.len() - 2 {
-            buf.push_str("└");
+            buf.push('└');
         } else {
             buf.push_str(LINE_BRANCH);
         }

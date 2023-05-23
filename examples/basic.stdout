@@ -1,68 +1,92 @@
-1:main┐basic::hierarchical-example version=0.1
-1:main├┐basic::hierarchical-example version=0.1
-1:main│└┬─┬─ basic::server host="localhost"
+1:main┐basic::hierarchical-example
+1:main┐ version=0.1
+1:main├┬─┬─ basic::hierarchical-example
+1:main││ └─ version=0.1
+1:main│└┬─┬─ basic::server
+1:main│ │ ├─ host="localhost"
 1:main│ │ └─ port=8080
 1:main│ ├─  Xms INFO basic starting
 1:main│ ├─  Xs  INFO basic listening
-1:main│ ├┬─┬─ basic::server host="localhost"
+1:main│ ├┬─┬─ basic::server
+1:main│ ││ ├─ host="localhost"
 1:main│ ││ └─ port=8080
-1:main│ │└┬─┬─ basic::conn peer_addr="82.9.9.9"
+1:main│ │└┬─┬─ basic::conn
+1:main│ │ │ ├─ peer_addr="82.9.9.9"
 1:main│ │ │ └─ port=42381
 1:main│ │ ├─  Xms DEBUG basic connected
 1:main│ │ ├─┬─  Xms DEBUG basic message received
 1:main│ │ │ └─ length=2
-1:main│ │┌┴┬─ basic::conn peer_addr="82.9.9.9"
+1:main│ │┌┴┬─ basic::conn
+1:main│ ││ ├─ peer_addr="82.9.9.9"
 1:main│ ││ └─ port=42381
-1:main│ ├┴┬─ basic::server host="localhost"
+1:main│ ├┴┬─ basic::server
+1:main│ │ ├─ host="localhost"
 1:main│ │ └─ port=8080
-1:main│ ├┬─┬─ basic::server host="localhost"
+1:main│ ├┬─┬─ basic::server
+1:main│ ││ ├─ host="localhost"
 1:main│ ││ └─ port=8080
-1:main│ │└┬─┬─ basic::conn peer_addr="8.8.8.8"
+1:main│ │└┬─┬─ basic::conn
+1:main│ │ │ ├─ peer_addr="8.8.8.8"
 1:main│ │ │ └─ port=18230
 1:main│ │ ├─  Xms DEBUG basic connected
-1:main│ │┌┴┬─ basic::conn peer_addr="8.8.8.8"
+1:main│ │┌┴┬─ basic::conn
+1:main│ ││ ├─ peer_addr="8.8.8.8"
 1:main│ ││ └─ port=18230
-1:main│ ├┴┬─ basic::server host="localhost"
+1:main│ ├┴┬─ basic::server
+1:main│ │ ├─ host="localhost"
 1:main│ │ └─ port=8080
-1:main│ ├┬─┬─ basic::server host="localhost"
+1:main│ ├┬─┬─ basic::server
+1:main│ ││ ├─ host="localhost"
 1:main│ ││ └─ port=8080
 1:main│ │└┬─┬─ basic::foomp 42 <- format string
 1:main│ │ │ └─ normal_var=43
 1:main│ │ ├─  Xms ERROR basic hello
 1:main│ │┌┴┬─ basic::foomp 42 <- format string
 1:main│ ││ └─ normal_var=43
-1:main│ ├┴┬─ basic::server host="localhost"
+1:main│ ├┴┬─ basic::server
+1:main│ │ ├─ host="localhost"
 1:main│ │ └─ port=8080
-1:main│ ├┬─┬─ basic::server host="localhost"
+1:main│ ├┬─┬─ basic::server
+1:main│ ││ ├─ host="localhost"
 1:main│ ││ └─ port=8080
-1:main│ │└┬─┬─ basic::conn peer_addr="82.9.9.9"
+1:main│ │└┬─┬─ basic::conn
+1:main│ │ │ ├─ peer_addr="82.9.9.9"
 1:main│ │ │ └─ port=42381
 1:main│ │ ├─┬─  Xms WARN basic weak encryption requested
 1:main│ │ │ └─ algo="xor"
 1:main│ │ ├─┬─  Xms DEBUG basic response sent
 1:main│ │ │ └─ length=8
 1:main│ │ ├─  Xms DEBUG basic disconnected
-1:main│ │┌┴┬─ basic::conn peer_addr="82.9.9.9"
+1:main│ │┌┴┬─ basic::conn
+1:main│ ││ ├─ peer_addr="82.9.9.9"
 1:main│ ││ └─ port=42381
-1:main│ ├┴┬─ basic::server host="localhost"
+1:main│ ├┴┬─ basic::server
+1:main│ │ ├─ host="localhost"
 1:main│ │ └─ port=8080
-1:main│ ├┬─┬─ basic::server host="localhost"
+1:main│ ├┬─┬─ basic::server
+1:main│ ││ ├─ host="localhost"
 1:main│ ││ └─ port=8080
-1:main│ │└┬─┬─ basic::conn peer_addr="8.8.8.8"
+1:main│ │└┬─┬─ basic::conn
+1:main│ │ │ ├─ peer_addr="8.8.8.8"
 1:main│ │ │ └─ port=18230
 1:main│ │ ├─┬─  Xms DEBUG basic message received
 1:main│ │ │ └─ length=5
 1:main│ │ ├─┬─  Xms DEBUG basic response sent
 1:main│ │ │ └─ length=8
 1:main│ │ ├─  Xms DEBUG basic disconnected
-1:main│ │┌┴┬─ basic::conn peer_addr="8.8.8.8"
+1:main│ │┌┴┬─ basic::conn
+1:main│ ││ ├─ peer_addr="8.8.8.8"
 1:main│ ││ └─ port=18230
-1:main│ ├┴┬─ basic::server host="localhost"
+1:main│ ├┴┬─ basic::server
+1:main│ │ ├─ host="localhost"
 1:main│ │ └─ port=8080
 1:main│ ├─  Xs  WARN basic internal error
 1:main│ ├─  Xs  ERROR basic this is a log message
 1:main│ ├─  Xs  INFO basic exit
-1:main│┌┴┬─ basic::server host="localhost"
+1:main│┌┴┬─ basic::server
+1:main││ ├─ host="localhost"
 1:main││ └─ port=8080
-1:main├┘basic::hierarchical-example version=0.1
-1:main┘basic::hierarchical-example version=0.1
+1:main├┴┬─ basic::hierarchical-example
+1:main│ └─ version=0.1
+1:main┘basic::hierarchical-example
+1:main┘ version=0.1

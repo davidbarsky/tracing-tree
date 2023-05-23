@@ -291,14 +291,18 @@ fn indent_block_with_lines(
     let mut s = String::with_capacity(indent_spaces + prefix.len());
     s.push_str(prefix);
 
-    // instead of using all spaces to indent, draw a vertical line at every indent level
-    // up until the last indent
-    for i in 0..(indent_spaces - indent_amount) {
+    let indent = |s: &mut String, i| {
         if i % indent_amount == 0 {
             s.push_str(LINE_VERT);
         } else {
             s.push(' ');
         }
+    };
+
+    // instead of using all spaces to indent, draw a vertical line at every indent level
+    // up until the last indent
+    for i in 0..(indent_spaces - indent_amount) {
+        indent(&mut s, i)
     }
 
     // draw branch
@@ -310,14 +314,44 @@ fn indent_block_with_lines(
             for _ in 1..(indent_amount / 2) {
                 buf.push_str(LINE_HORIZ);
             }
-            buf.push_str(LINE_OPEN);
+            if lines.len() > 1 {
+                buf.push_str(ARGS_BRANCH);
+                for _ in 1..indent_amount {
+                    buf.push_str(LINE_HORIZ);
+                }
+                buf.push_str(ARGS_BRANCH);
+                for _ in 1..indent_amount {
+                    buf.push_str(LINE_HORIZ);
+                }
+                buf.push_str(" ");
+                for i in 0..(indent_amount - 1) {
+                    indent(&mut s, i)
+                }
+            } else {
+                buf.push_str(LINE_OPEN);
+            }
         }
         SpanMode::Open { verbose: false } => {
             buf.push_str(LINE_BRANCH);
             for _ in 1..indent_amount {
                 buf.push_str(LINE_HORIZ);
             }
-            buf.push_str(LINE_OPEN);
+            if lines.len() > 1 {
+                buf.push_str(ARGS_BRANCH);
+                for _ in 1..indent_amount {
+                    buf.push_str(LINE_HORIZ);
+                }
+                buf.push_str(ARGS_BRANCH);
+                for _ in 1..indent_amount {
+                    buf.push_str(LINE_HORIZ);
+                }
+                buf.push_str(" ");
+                for i in 0..indent_amount {
+                    indent(&mut s, i)
+                }
+            } else {
+                buf.push_str(LINE_OPEN);
+            }
         }
         SpanMode::Open { verbose: true } => {
             buf.push_str(LINE_VERT);
@@ -333,7 +367,22 @@ fn indent_block_with_lines(
             }
             // We don't have the space for fancy rendering at single space indent.
             if indent_amount > 1 {
-                buf.push_str(LINE_OPEN);
+                if lines.len() > 1 {
+                    buf.push_str(ARGS_BRANCH);
+                    for _ in 1..indent_amount {
+                        buf.push_str(LINE_HORIZ);
+                    }
+                    buf.push_str(ARGS_BRANCH);
+                    for _ in 1..indent_amount {
+                        buf.push_str(LINE_HORIZ);
+                    }
+                    buf.push_str(" ");
+                    for i in 0..indent_amount {
+                        indent(&mut s, i)
+                    }
+                } else {
+                    buf.push_str(LINE_OPEN);
+                }
             } else {
                 buf.push_str(LINE_VERT);
             }
@@ -359,7 +408,22 @@ fn indent_block_with_lines(
             }
             // We don't have the space for fancy rendering at single space indent.
             if indent_amount > 1 {
-                buf.push_str(LINE_CLOSE);
+                if lines.len() > 1 {
+                    buf.push_str("┴");
+                    for _ in 1..indent_amount - 1 {
+                        buf.push_str(LINE_HORIZ);
+                    }
+                    buf.push_str("┬");
+                    for _ in 1..indent_amount {
+                        buf.push_str(LINE_HORIZ);
+                    }
+                    buf.push_str(" ");
+                    for i in 0..indent_amount - 1 {
+                        indent(&mut s, i)
+                    }
+                } else {
+                    buf.push_str(LINE_CLOSE);
+                }
             } else {
                 buf.push_str(LINE_VERT);
             }
@@ -369,7 +433,22 @@ fn indent_block_with_lines(
             for _ in 1..(indent_amount / 2) {
                 buf.push_str(LINE_HORIZ);
             }
-            buf.push_str(LINE_CLOSE);
+            if lines.len() > 1 {
+                buf.push_str("┴");
+                for _ in 1..indent_amount - 1 {
+                    buf.push_str(LINE_HORIZ);
+                }
+                buf.push_str("┬");
+                for _ in 1..indent_amount {
+                    buf.push_str(LINE_HORIZ);
+                }
+                buf.push_str(" ");
+                for i in 0..indent_amount - 2 {
+                    indent(&mut s, i)
+                }
+            } else {
+                buf.push_str(LINE_CLOSE);
+            }
         }
         SpanMode::Event => {
             buf.push_str(LINE_BRANCH);
@@ -392,11 +471,7 @@ fn indent_block_with_lines(
     // add the rest of the indentation, since we don't want to draw horizontal lines
     // for subsequent lines
     for i in 0..indent_amount {
-        if i % indent_amount == 0 {
-            s.push_str(LINE_VERT);
-        } else {
-            s.push(' ');
-        }
+        indent(&mut s, i)
     }
 
     // add all of the actual content, with each line preceded by the indent string

@@ -1,5 +1,5 @@
-1:main┐basic_non_verbose::hierarchical-example
-1:main┐ version=0.1
+1:main┬─┬─ basic_non_verbose::hierarchical-example
+1:main│ └─ version=0.1
 1:main└─┬─┬─ basic_non_verbose::server
 1:main  │ ├─ host="localhost"
 1:main  │ └─ port=8080

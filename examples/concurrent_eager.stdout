@@ -1,20 +1,20 @@
-1:main┐concurrent_eager::spawn_fut
-1:main┐ key="a"
-1:main┐concurrent_eager::spawn_fut
-1:main┐ key="b"
-1:main┐concurrent_eager::spawn_fut
-1:main┐ key="a"
+1:main┬───┬─── concurrent_eager::spawn_fut
+1:main│   └─ key="a"
+1:main┬───┬─── concurrent_eager::spawn_fut
+1:main│   └─ key="b"
+1:main┬───┬─── concurrent_eager::spawn_fut
+1:main│   └─ key="a"
 1:main└───┐concurrent_eager::a
-1:main┐concurrent_eager::spawn_fut
-1:main┐ key="b"
+1:main┬───┬─── concurrent_eager::spawn_fut
+1:main│   └─ key="b"
 1:main└───┐concurrent_eager::b
-1:main┐concurrent_eager::spawn_fut
-1:main┐ key="a"
+1:main┬───┬─── concurrent_eager::spawn_fut
+1:main│   └─ key="a"
 1:main└───┐concurrent_eager::a
 1:main    ├─── INFO concurrent_eager a
 1:main┌───┘
-1:main┐concurrent_eager::spawn_fut
-1:main┐ key="b"
+1:main┬───┬─── concurrent_eager::spawn_fut
+1:main│   └─ key="b"
 1:main└───┐concurrent_eager::b
 1:main    ├─── INFO concurrent_eager b
 1:main┌───┘

@@ -335,29 +335,12 @@ fn indent_block_with_lines(
 
     if lines.is_empty() {
         return;
-    } else if indent_spaces == 0 {
-        for line in lines {
-            buf.push_str(prefix);
-            // The first indent is special, we only need to print open/close and nothing else
-            if indent == 0 {
-                match style {
-                    SpanMode::Open { .. } => buf.push_str(LINE_OPEN),
-                    SpanMode::Retrace { .. } => buf.push_str(LINE_OPEN),
-                    SpanMode::Close { .. } => buf.push_str(LINE_CLOSE),
-                    SpanMode::PreOpen { .. } | SpanMode::PostClose => {}
-                    SpanMode::Event => {}
-                }
-            }
-            buf.push_str(line);
-            buf.push('\n');
-        }
-        return;
     }
 
     let mut s = String::with_capacity(indent_spaces + prefix.len());
     s.push_str(prefix);
 
-    for _ in 0..(indent_spaces - indent_amount) {
+    for _ in 0..indent_spaces.saturating_sub(indent_amount) {
         s.push(' ');
     }
 
@@ -388,9 +371,11 @@ fn indent_block_with_lines(
             }
         }
         SpanMode::Open { verbose: false } | SpanMode::Retrace { verbose: false } => {
-            buf.push(LINE_OPEN2);
-            for _ in 1..indent_amount {
-                buf.push_str(LINE_HORIZ);
+            if indent_spaces != 0 {
+                buf.push(LINE_OPEN2);
+                for _ in 1..indent_amount {
+                    buf.push_str(LINE_HORIZ);
+                }
             }
             if lines.len() > 1 {
                 buf.push_str(ARGS_BRANCH);
@@ -401,25 +386,30 @@ fn indent_block_with_lines(
                 for _ in 1..indent_amount {
                     buf.push_str(LINE_HORIZ);
                 }
-                buf.push_str(" ");
-                for _ in 0..indent_amount {
-                    s.push(' ');
+                buf.push(' ');
+
+                if indent_spaces != 0 {
+                    for _ in 0..indent_amount {
+                        s.push(' ');
+                    }
                 }
             } else {
                 buf.push_str(LINE_OPEN);
             }
         }
         SpanMode::Open { verbose: true } | SpanMode::Retrace { verbose: true } => {
-            buf.push(' ');
-            for _ in 1..(indent_amount / 2) {
+            if indent_spaces != 0 {
                 buf.push(' ');
-            }
-            // We don't have the space for fancy rendering at single space indent.
-            if indent_amount > 1 {
-                buf.push(LINE_OPEN2);
-            }
-            for _ in (indent_amount / 2)..(indent_amount - 1) {
-                buf.push_str(LINE_HORIZ);
+                for _ in 1..(indent_amount / 2) {
+                    buf.push(' ');
+                }
+                // We don't have the space for fancy rendering at single space indent.
+                if indent_amount > 1 {
+                    buf.push(LINE_OPEN2);
+                }
+                for _ in (indent_amount / 2)..(indent_amount - 1) {
+                    buf.push_str(LINE_HORIZ);
+                }
             }
             // We don't have the space for fancy rendering at single space indent.
             if indent_amount > 1 {
@@ -432,9 +422,11 @@ fn indent_block_with_lines(
                     for _ in 1..indent_amount {
                         buf.push_str(LINE_HORIZ);
                     }
-                    buf.push_str(" ");
-                    for _ in 0..indent_amount {
-                        s.push(' ');
+                    buf.push(' ');
+                    if indent_spaces != 0 {
+                        for _ in 0..indent_amount {
+                            s.push(' ');
+                        }
                     }
                 } else {
                     buf.push_str(LINE_OPEN);
@@ -444,23 +436,27 @@ fn indent_block_with_lines(
             }
         }
         SpanMode::Close { verbose: false } => {
-            buf.push(LINE_CLOSE2);
-            for _ in 1..indent_amount {
-                buf.push_str(LINE_HORIZ);
+            if indent_spaces != 0 {
+                buf.push(LINE_CLOSE2);
+                for _ in 1..indent_amount {
+                    buf.push_str(LINE_HORIZ);
+                }
             }
             buf.push_str(LINE_CLOSE);
         }
         SpanMode::Close { verbose: true } => {
-            buf.push(' ');
-            for _ in 1..(indent_amount / 2) {
+            if indent_spaces != 0 {
                 buf.push(' ');
-            }
-            // We don't have the space for fancy rendering at single space indent.
-            if indent_amount > 1 {
-                buf.push(LINE_CLOSE2);
-            }
-            for _ in (indent_amount / 2)..(indent_amount - 1) {
-                buf.push_str(LINE_HORIZ);
+                for _ in 1..(indent_amount / 2) {
+                    buf.push(' ');
+                }
+                // We don't have the space for fancy rendering at single space indent.
+                if indent_amount > 1 {
+                    buf.push(LINE_CLOSE2);
+                }
+                for _ in (indent_amount / 2)..(indent_amount - 1) {
+                    buf.push_str(LINE_HORIZ);
+                }
             }
             // We don't have the space for fancy rendering at single space indent.
             if indent_amount > 1 {
@@ -473,9 +469,12 @@ fn indent_block_with_lines(
                     for _ in 1..indent_amount {
                         buf.push_str(LINE_HORIZ);
                     }
-                    buf.push_str(" ");
-                    for _ in 0..indent_amount - 1 {
-                        s.push(' ');
+                    buf.push(' ');
+
+                    if indent_spaces != 0 {
+                        for _ in 0..indent_amount - 1 {
+                            s.push(' ');
+                        }
                     }
                 } else {
                     buf.push_str(LINE_CLOSE);
@@ -507,30 +506,43 @@ fn indent_block_with_lines(
             }
         }
         SpanMode::Event => {
-            buf.push_str(LINE_BRANCH);
+            if indent_spaces != 0 {
+                buf.push_str(LINE_BRANCH);
+            }
             if lines.len() > 1 {
-                for _ in 0..(indent_amount - 1) {
-                    buf.push_str(LINE_HORIZ);
+                if indent_spaces != 0 {
+                    for _ in 0..(indent_amount - 1) {
+                        buf.push_str(LINE_HORIZ);
+                    }
                 }
                 buf.push_str(ARGS_BRANCH);
             }
 
-            // add `indent_amount - 1` horizontal lines before the span/event
-            for _ in 0..(indent_amount - 1) {
-                buf.push_str(LINE_HORIZ);
+            if indent_spaces != 0 {
+                // add `indent_amount - 1` horizontal lines before the span/event
+                for _ in 0..(indent_amount - 1) {
+                    buf.push_str(LINE_HORIZ);
+                }
             }
         }
     }
     buf.push_str(lines[0]);
     buf.push('\n');
 
-    // add the rest of the indentation, since we don't want to draw horizontal lines
-    // for subsequent lines
-    for i in 0..indent_amount {
-        if i % indent_amount == 0 {
-            s.push_str(LINE_VERT);
-        } else {
+    match style {
+        SpanMode::Close { verbose: true } if indent_spaces == 0 => {
             s.push(' ');
+        }
+        _ => {
+            // add the rest of the indentation, since we don't want to draw horizontal lines
+            // for subsequent lines
+            for i in 0..indent_amount {
+                if i % indent_amount == 0 {
+                    s.push_str(LINE_VERT);
+                } else {
+                    s.push(' ');
+                }
+            }
         }
     }
 

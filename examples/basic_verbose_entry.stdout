@@ -1,5 +1,5 @@
-1:main┐basic_verbose_entry::hierarchical-example
-1:main┐ version=0.1
+1:main┬─┬─ basic_verbose_entry::hierarchical-example
+1:main│ └─ version=0.1
 1:main└┬─┬─ basic_verbose_entry::hierarchical-example
 1:main │ └─ version=0.1
 1:main └┬─┬─ basic_verbose_entry::server

@@ -1,5 +1,5 @@
-1:main┐basic::hierarchical-example
-1:main┐ version=0.1
+1:main┬─┬─ basic::hierarchical-example
+1:main│ └─ version=0.1
 1:main├┬─┬─ basic::hierarchical-example
 1:main││ └─ version=0.1
 1:main│└┬─┬─ basic::server
@@ -88,5 +88,5 @@
 1:main││ └─ port=8080
 1:main├┴┬─ basic::hierarchical-example
 1:main│ └─ version=0.1
-1:main┘basic::hierarchical-example
-1:main┘ version=0.1
+1:main┴┬─ basic::hierarchical-example
+1:main └─ version=0.1

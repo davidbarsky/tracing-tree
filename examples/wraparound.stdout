@@ -1,5 +1,5 @@
-1:main┐wraparound::recurse
-1:main┐ i=0
+1:main┬─┬─ wraparound::recurse
+1:main│ └─ i=0
 1:main├─  Xms WARN wraparound boop
 1:main├─┬─┬─ wraparound::recurse
 1:main│ │ └─ i=1
@@ -14,8 +14,8 @@
 1:main│ │ │ │ │ └─ i=4
 1:main────────┘
 1:main  Xms WARN wraparound boop
-1:main┐wraparound::recurse
-1:main┐ i=5
+1:main┬─┬─ wraparound::recurse
+1:main│ └─ i=5
 1:main├─  Xms WARN wraparound boop
 1:main├─┬─┬─ wraparound::recurse
 1:main│ │ └─ i=6
@@ -30,8 +30,8 @@
 1:main│ │ │ │ │ └─ i=9
 1:main────────┘
 1:main  Xms WARN wraparound boop
-1:main┐wraparound::recurse
-1:main┐ i=10
+1:main┬─┬─ wraparound::recurse
+1:main│ └─ i=10
 1:main├─  Xms WARN wraparound boop
 1:main├─┬─┬─ wraparound::recurse
 1:main│ │ └─ i=11
@@ -46,8 +46,8 @@
 1:main│ │ │ │ │ └─ i=14
 1:main────────┘
 1:main  Xms WARN wraparound boop
-1:main┐wraparound::recurse
-1:main┐ i=15
+1:main┬─┬─ wraparound::recurse
+1:main│ └─ i=15
 1:main├─  Xms WARN wraparound boop
 1:main├─┬─┬─ wraparound::recurse
 1:main│ │ └─ i=16
@@ -62,8 +62,8 @@
 1:main│ │ │ │ │ └─ i=19
 1:main────────┘
 1:main  Xms WARN wraparound boop
-1:main┐wraparound::recurse
-1:main┐ i=20
+1:main┬─┬─ wraparound::recurse
+1:main│ └─ i=20
 1:main├─  Xms WARN wraparound boop
 1:main├─┬─┬─ wraparound::recurse
 1:main│ │ └─ i=21

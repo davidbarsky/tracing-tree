@@ -249,6 +249,7 @@ where
             .count();
 
         if self.config.verbose_entry || matches!(style, SpanMode::Open { .. } | SpanMode::Event) {
+            eprintln!("Entered span: {:?}", span.metadata());
             if self.config.targets {
                 let target = span.metadata().target();
                 write!(

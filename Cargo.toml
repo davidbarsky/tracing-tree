@@ -10,11 +10,18 @@ readme = "README.md"
 
 [dependencies]
 tracing-core = "0.1"
-tracing-subscriber = { version = "0.3", default-features = false, features = ["registry", "fmt", "std"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = [
+    "registry",
+    "fmt",
+    "std",
+] }
 nu-ansi-term = "0.46.0"
 is-terminal = "0.4.7"
 tracing-log = { version = "0.1", optional = true }
-time = { version = "0.3.20", optional = true, features = ["formatting", "local-offset"] }
+time = { version = "0.3.20", optional = true, features = [
+    "formatting",
+    "local-offset",
+] }
 
 [features]
 default = ["tracing-log"]
@@ -23,6 +30,7 @@ default = ["tracing-log"]
 tracing = "0.1"
 glob = "0.3"
 ui_test = "0.7"
+futures = "0.3"
 log = "0.4"
 
 [[test]]

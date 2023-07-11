@@ -14,7 +14,7 @@ pub(crate) const LINE_BRANCH: &str = "├";
 pub(crate) const LINE_CLOSE: &str = "┘";
 pub(crate) const LINE_OPEN: &str = "┐";
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub(crate) enum SpanMode {
     PreOpen,
     Open { verbose: bool },

@@ -34,7 +34,7 @@ fn main() {
     let _e2 = server_span.enter();
     info!("starting");
 
-    std::thread::sleep(std::time::Duration::from_millis(3000));
+    std::thread::sleep(std::time::Duration::from_millis(1000));
 
     info!("listening");
 

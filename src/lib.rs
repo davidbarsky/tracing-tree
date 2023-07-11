@@ -7,9 +7,14 @@ use format::{Buffers, ColorLevel, Config, FmtEvent, SpanMode};
 use is_terminal::IsTerminal;
 use nu_ansi_term::{Color, Style};
 use std::{
+    any::Any,
     fmt::{self, Write as _},
+    hint::spin_loop,
     io,
-    sync::Mutex,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Mutex,
+    },
     time::Instant,
 };
 use tracing_core::{
@@ -46,6 +51,7 @@ impl Visit for Data {
         self.kvs.push((field.name(), format!("{:?}", value)))
     }
 }
+
 #[derive(Debug)]
 pub struct HierarchicalLayer<W = fn() -> io::Stderr, FT = ()>
 where
@@ -56,6 +62,13 @@ where
     bufs: Mutex<Buffers>,
     config: Config,
     timer: FT,
+
+    /// The last seen span of this layer
+    ///
+    /// This serves to serialize spans as two events can be generated in different spans
+    /// without the spans entering and exiting beforehand. This happens for multithreaded code
+    /// and instrumented futures
+    current_span: AtomicU64,
 }
 
 impl Default for HierarchicalLayer {
@@ -77,6 +90,7 @@ impl HierarchicalLayer<fn() -> io::Stderr> {
             bufs: Mutex::new(Buffers::new()),
             config,
             timer: (),
+            current_span: AtomicU64::new(0),
         }
     }
 }
@@ -103,6 +117,7 @@ where
             config: self.config,
             bufs: self.bufs,
             timer: self.timer,
+            current_span: self.current_span,
         }
     }
 
@@ -128,6 +143,7 @@ where
             make_writer: self.make_writer,
             config: self.config,
             bufs: self.bufs,
+            current_span: self.current_span,
             timer,
         }
     }
@@ -249,7 +265,8 @@ where
             .count();
 
         if self.config.verbose_entry || matches!(style, SpanMode::Open { .. } | SpanMode::Event) {
-            eprintln!("Entered span: {:?}", span.metadata());
+            eprintln!("span: {:?}", span.metadata().name());
+
             if self.config.targets {
                 let target = span.metadata().target();
                 write!(
@@ -327,6 +344,19 @@ where
         let bufs = &mut *guard;
         let mut event_buf = &mut bufs.current_buf;
 
+        let span = ctx.current_span();
+        let span_id = span.id();
+        let span = span_id.and_then(|id| ctx.span(id).map(|span| (id, span)));
+
+        if let Some(span_id) = span_id {
+            let span = span_id.into_u64();
+            let old_span = self.current_span.swap(span, Ordering::Acquire);
+
+            if span != old_span {
+                eprintln!("concurrent");
+            }
+        }
+
         // Time.
 
         {
@@ -350,20 +380,19 @@ where
 
         // check if this event occurred in the context of a span.
         // if it has, get the start time of this span.
-        let start = match ctx.current_span().id() {
-            Some(id) => match ctx.span(id) {
+        let start = match span {
+            Some((id, span)) => {
                 // if the event is in a span, get the span's starting point.
-                Some(ctx) => {
-                    let ext = ctx.extensions();
-                    let data = ext
-                        .get::<Data>()
-                        .expect("Data cannot be found in extensions");
-                    Some(data.start)
-                }
-                None => None,
-            },
+                let ext = span.extensions();
+                let data = ext
+                    .get::<Data>()
+                    .expect("Data cannot be found in extensions");
+
+                Some(data.start)
+            }
             None => None,
         };
+
         if let Some(start) = start {
             let elapsed = start.elapsed();
             let millis = elapsed.as_millis();
@@ -398,6 +427,7 @@ where
         } else {
             level.to_string()
         };
+
         write!(&mut event_buf, "{level}", level = level).expect("Unable to write to buffer");
 
         if self.config.targets {

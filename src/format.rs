@@ -17,8 +17,16 @@ pub(crate) const LINE_OPEN: &str = "┐";
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum SpanMode {
     PreOpen,
-    Open { verbose: bool },
-    Close { verbose: bool },
+    Open {
+        verbose: bool,
+    },
+    Close {
+        verbose: bool,
+    },
+    /// A span has been entered but another *different* span has been entered in the meantime.
+    Retrace {
+        verbose: bool,
+    },
     PostClose,
     Event,
 }
@@ -43,6 +51,8 @@ pub struct Config {
     pub verbose_entry: bool,
     /// Whether to print the current span before exiting it.
     pub verbose_exit: bool,
+    /// Print the path leading up to a span if a different span was entered concurrently
+    pub verbose_retrace: bool,
     /// Whether to print squiggly brackets (`{}`) around the list of fields in a span.
     pub bracketed_fields: bool,
 }
@@ -95,6 +105,13 @@ impl Config {
         }
     }
 
+    pub fn with_verbose_retrace(self, verbose_retrace: bool) -> Self {
+        Self {
+            verbose_retrace,
+            ..self
+        }
+    }
+
     pub fn with_bracketed_fields(self, bracketed_fields: bool) -> Self {
         Self {
             bracketed_fields,
@@ -137,6 +154,7 @@ impl Default for Config {
             wraparound: usize::max_value(),
             verbose_entry: false,
             verbose_exit: false,
+            verbose_retrace: false,
             bracketed_fields: false,
         }
     }
@@ -277,6 +295,7 @@ fn indent_block_with_lines(
             if indent == 0 {
                 match style {
                     SpanMode::Open { .. } => buf.push_str(LINE_OPEN),
+                    SpanMode::Retrace { .. } => buf.push_str(LINE_OPEN),
                     SpanMode::Close { .. } => buf.push_str(LINE_CLOSE),
                     SpanMode::PreOpen | SpanMode::PostClose => {}
                     SpanMode::Event => {}
@@ -318,7 +337,14 @@ fn indent_block_with_lines(
             }
             buf.push_str(LINE_OPEN);
         }
-        SpanMode::Open { verbose: true } => {
+        SpanMode::Retrace { verbose: false } => {
+            buf.push_str(LINE_BRANCH);
+            for _ in 1..indent_amount {
+                buf.push_str(LINE_HORIZ);
+            }
+            buf.push_str(LINE_OPEN);
+        }
+        SpanMode::Open { verbose: true } | SpanMode::Retrace { verbose: true } => {
             buf.push_str(LINE_VERT);
             for _ in 1..(indent_amount / 2) {
                 buf.push(' ');

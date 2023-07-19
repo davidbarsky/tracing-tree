@@ -11,6 +11,7 @@ use std::{
     fmt::{self, Write as _},
     hint::spin_loop,
     io,
+    iter::Fuse,
     sync::{
         atomic::{AtomicU64, Ordering},
         Mutex,
@@ -27,7 +28,7 @@ use tracing_log::NormalizeEvent;
 use tracing_subscriber::{
     fmt::MakeWriter,
     layer::{Context, Layer},
-    registry::{self, LookupSpan},
+    registry::{self, LookupSpan, ScopeFromRoot, SpanRef},
 };
 
 pub(crate) struct Data {
@@ -205,6 +206,17 @@ where
         }
     }
 
+    /// Whether to print the currently active span's message again if another span was entered in
+    /// the meantime
+    /// This helps during concurrent or multi-threaded events where threads are entered, but not
+    /// necessarily *exited* before other *divergent* spans are entered and generating events.
+    pub fn with_verbose_retrace(self, verbose_retrace: bool) -> Self {
+        Self {
+            config: self.config.with_verbose_retrace(verbose_retrace),
+            ..self
+        }
+    }
+
     /// Whether to print `{}` around the fields when printing a span.
     /// This can help visually distinguish fields from the rest of the message.
     pub fn with_bracketed_fields(self, bracketed_fields: bool) -> Self {
@@ -248,6 +260,7 @@ where
         let span = ctx
             .span(id)
             .expect("in on_enter/on_exit but span does not exist");
+
         let ext = span.extensions();
         let data = ext.get::<Data>().expect("span does not have data");
 
@@ -258,8 +271,7 @@ where
         let indent = ctx
             .lookup_current()
             .as_ref()
-            .map(registry::SpanRef::scope)
-            .map(registry::Scope::from_root)
+            .map(scope_path)
             .into_iter()
             .flatten()
             .count();
@@ -340,22 +352,40 @@ where
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
-        let mut guard = self.bufs.lock().unwrap();
-        let bufs = &mut *guard;
-        let mut event_buf = &mut bufs.current_buf;
-
         let span = ctx.current_span();
         let span_id = span.id();
         let span = span_id.and_then(|id| ctx.span(id).map(|span| (id, span)));
 
-        if let Some(span_id) = span_id {
+        if let Some((span_id, current_span)) = &span {
             let span = span_id.into_u64();
             let old_span = self.current_span.swap(span, Ordering::Acquire);
+            eprintln!("Old span: {old_span}");
 
-            if span != old_span {
+            if old_span != 0 && span != old_span {
                 eprintln!("concurrent");
+                let old_span = ctx.span(&Id::from_u64(old_span));
+                let old_path = old_span.as_ref().map(scope_path).into_iter().flatten();
+                let new_path = scope_path(current_span);
+
+                // Print the path from the common base of the two spans
+                let new_path = DifferenceIter::new(old_path, new_path, |v| v.id());
+
+                for span in new_path {
+                    eprintln!("Writing span {:?}", span.id());
+                    self.write_span_info(
+                        &span.id(),
+                        &ctx,
+                        SpanMode::Retrace {
+                            verbose: self.config.verbose_retrace,
+                        },
+                    )
+                }
             }
         }
+
+        let mut guard = self.bufs.lock().unwrap();
+        let bufs = &mut *guard;
+        let mut event_buf = &mut bufs.current_buf;
 
         // Time.
 
@@ -461,6 +491,46 @@ where
         if self.config.verbose_exit {
             if let Some(span) = ctx.span(&id).and_then(|span| span.parent()) {
                 self.write_span_info(&span.id(), &ctx, SpanMode::PostClose);
+            }
+        }
+    }
+}
+
+fn scope_path<'a, R: LookupSpan<'a>>(span: &SpanRef<'a, R>) -> ScopeFromRoot<'a, R> {
+    span.scope().from_root()
+}
+
+/// Runs `A` and `B` side by side and only yields items present in `B`
+struct DifferenceIter<L, R, F> {
+    left: Fuse<L>,
+    right: R,
+    compare: F,
+}
+
+impl<L: Iterator<Item = T>, R: Iterator<Item = T>, T, U: PartialEq, F: Fn(&T) -> U>
+    DifferenceIter<L, R, F>
+{
+    fn new(left: L, right: R, compare: F) -> Self {
+        Self {
+            left: left.fuse(),
+            right,
+            compare,
+        }
+    }
+}
+
+impl<L: Iterator<Item = T>, R: Iterator<Item = T>, T, U: PartialEq, F: Fn(&T) -> U> Iterator
+    for DifferenceIter<L, R, F>
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let left = self.left.next();
+            let right = self.right.next()?;
+
+            if left.as_ref().map(&self.compare) != Some((self.compare)(&right)) {
+                return Some(right);
             }
         }
     }

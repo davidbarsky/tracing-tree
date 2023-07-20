@@ -253,7 +253,7 @@ where
         Ok(())
     }
 
-    fn write_span_info<S>(&self, id: &Id, ctx: &Context<S>, style: SpanMode)
+    fn write_span_info<S>(&self, id: &Id, bufs: &mut Buffers, ctx: &Context<S>, style: SpanMode)
     where
         S: Subscriber + for<'span> LookupSpan<'span>,
     {
@@ -264,8 +264,6 @@ where
         let ext = span.extensions();
         let data = ext.get::<Data>().expect("span does not have data");
 
-        let mut guard = self.bufs.lock().unwrap();
-        let bufs = &mut *guard;
         let mut current_buf = &mut bufs.current_buf;
 
         let indent = ctx
@@ -336,14 +334,21 @@ where
             span.extensions_mut().insert(data);
         }
 
+        let bufs = &mut *self.bufs.lock().unwrap();
+
+        // Store the most recently entered span
+        self.current_span
+            .store(span.id().into_u64(), Ordering::Release);
+
         if self.config.verbose_exit {
             if let Some(span) = span.parent() {
-                self.write_span_info(&span.id(), &ctx, SpanMode::PreOpen);
+                self.write_span_info(&span.id(), bufs, &ctx, SpanMode::PreOpen);
             }
         }
 
         self.write_span_info(
             id,
+            bufs,
             &ctx,
             SpanMode::Open {
                 verbose: self.config.verbose_entry,
@@ -356,14 +361,22 @@ where
         let span_id = span.id();
         let span = span_id.and_then(|id| ctx.span(id).map(|span| (id, span)));
 
+        let mut guard = self.bufs.lock().unwrap();
+        let bufs = &mut *guard;
+
         if let Some((span_id, current_span)) = &span {
             let span = span_id.into_u64();
             let old_span = self.current_span.swap(span, Ordering::Acquire);
             eprintln!("Old span: {old_span}");
 
             if old_span != 0 && span != old_span {
-                eprintln!("concurrent");
                 let old_span = ctx.span(&Id::from_u64(old_span));
+                eprintln!(
+                    "concurrent old: {:?}, new: {:?}",
+                    old_span.as_ref().map(|v| v.metadata().name()),
+                    current_span.metadata().name()
+                );
+
                 let old_path = old_span.as_ref().map(scope_path).into_iter().flatten();
                 let new_path = scope_path(current_span);
 
@@ -374,6 +387,7 @@ where
                     eprintln!("Writing span {:?}", span.id());
                     self.write_span_info(
                         &span.id(),
+                        bufs,
                         &ctx,
                         SpanMode::Retrace {
                             verbose: self.config.verbose_retrace,
@@ -383,8 +397,6 @@ where
             }
         }
 
-        let mut guard = self.bufs.lock().unwrap();
-        let bufs = &mut *guard;
         let mut event_buf = &mut bufs.current_buf;
 
         // Time.
@@ -480,8 +492,11 @@ where
     }
 
     fn on_close(&self, id: Id, ctx: Context<S>) {
+        let mut guard = &mut *self.bufs.lock().unwrap();
+
         self.write_span_info(
             &id,
+            guard,
             &ctx,
             SpanMode::Close {
                 verbose: self.config.verbose_exit,
@@ -490,7 +505,7 @@ where
 
         if self.config.verbose_exit {
             if let Some(span) = ctx.span(&id).and_then(|span| span.parent()) {
-                self.write_span_info(&span.id(), &ctx, SpanMode::PostClose);
+                self.write_span_info(&span.id(), guard, &ctx, SpanMode::PostClose);
             }
         }
     }

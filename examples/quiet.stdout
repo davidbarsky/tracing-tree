@@ -1,25 +1,42 @@
-1:main┐quiet::hierarchical-example version=0.1
-1:main├─┐quiet::server host="localhost", port=8080
+1:main┬─┬─ quiet::hierarchical-example
+1:main│ └─ version=0.1
+1:main├─┬─┬─ quiet::server
+1:main│ │ ├─ host="localhost"
+1:main│ │ └─ port=8080
 1:main│ ├─  Xms INFO quiet starting
 1:main│ ├─  Xms INFO quiet listening
-1:main│ ├─┐quiet::conn peer_addr="82.9.9.9", port=42381
+1:main│ ├─┬─┬─ quiet::conn
+1:main│ │ │ ├─ peer_addr="82.9.9.9"
+1:main│ │ │ └─ port=42381
 1:main│ │ ├─  Xms DEBUG quiet connected
-1:main│ │ ├─  Xms DEBUG quiet message received, length=2
+1:main│ │ ├─┬─  Xms DEBUG quiet message received
+1:main│ │ │ └─ length=2
 1:main│ ├─┘
-1:main│ ├─┐quiet::conn peer_addr="8.8.8.8", port=18230
+1:main│ ├─┬─┬─ quiet::conn
+1:main│ │ │ ├─ peer_addr="8.8.8.8"
+1:main│ │ │ └─ port=18230
 1:main│ │ ├─  Xms DEBUG quiet connected
 1:main│ ├─┘
-1:main│ ├─┐quiet::foomp 42 <- format string, normal_var=43
+1:main│ ├─┬─┬─ quiet::foomp 42 <- format string
+1:main│ │ │ └─ normal_var=43
 1:main│ │ ├─  Xms ERROR quiet hello
 1:main│ ├─┘
-1:main│ ├─┐quiet::conn peer_addr="82.9.9.9", port=42381
-1:main│ │ ├─  Xms WARN quiet weak encryption requested, algo="xor"
-1:main│ │ ├─  Xms DEBUG quiet response sent, length=8
+1:main│ ├─┬─┬─ quiet::conn
+1:main│ │ │ ├─ peer_addr="82.9.9.9"
+1:main│ │ │ └─ port=42381
+1:main│ │ ├─┬─  Xms WARN quiet weak encryption requested
+1:main│ │ │ └─ algo="xor"
+1:main│ │ ├─┬─  Xms DEBUG quiet response sent
+1:main│ │ │ └─ length=8
 1:main│ │ ├─  Xms DEBUG quiet disconnected
 1:main│ ├─┘
-1:main│ ├─┐quiet::conn peer_addr="8.8.8.8", port=18230
-1:main│ │ ├─  Xms DEBUG quiet message received, length=5
-1:main│ │ ├─  Xms DEBUG quiet response sent, length=8
+1:main│ ├─┬─┬─ quiet::conn
+1:main│ │ │ ├─ peer_addr="8.8.8.8"
+1:main│ │ │ └─ port=18230
+1:main│ │ ├─┬─  Xms DEBUG quiet message received
+1:main│ │ │ └─ length=5
+1:main│ │ ├─┬─  Xms DEBUG quiet response sent
+1:main│ │ │ └─ length=8
 1:main│ │ ├─  Xms DEBUG quiet disconnected
 1:main│ ├─┘
 1:main│ ├─  Xs  WARN quiet internal error

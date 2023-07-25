@@ -5,7 +5,7 @@ use std::{
 };
 
 use futures::FutureExt;
-use tracing::{debug, error, info, instrument, span, warn, Instrument, Level};
+use tracing::{debug, debug_span, error, info, instrument, span, warn, Instrument, Level};
 use tracing_subscriber::{layer::SubscriberExt, registry::Registry};
 use tracing_tree::HierarchicalLayer;
 
@@ -41,32 +41,36 @@ fn main() {
 
     let peer1 = span!(Level::TRACE, "conn", peer_addr = "82.9.9.9", port = 42381);
 
-    let mut countdown_a = CountdownFuture {
-        label: "a",
-        count: 3,
-    }
-    .instrument(span!(Level::DEBUG, "countdown_a"))
-    .fuse();
-
-    let mut countdown_b = CountdownFuture {
-        label: "b",
-        count: 5,
-    }
-    .instrument(span!(Level::DEBUG, "countdown_b"))
-    .fuse();
-
     debug!("starting countdowns");
+    debug_span!("countdowns").in_scope(|| {
+        let mut countdown_a = CountdownFuture {
+            label: "a",
+            count: 3,
+        }
+        .instrument(span!(Level::DEBUG, "countdown_a"))
+        .fuse();
 
-    // We don't care if the futures are ready, as we poll manually
-    let waker = futures::task::noop_waker();
-    let mut cx = Context::from_waker(&waker);
+        let mut countdown_b = CountdownFuture {
+            label: "b",
+            count: 5,
+        }
+        .instrument(span!(Level::DEBUG, "countdown_b"))
+        .fuse();
 
-    let _ = countdown_a.poll_unpin(&mut cx);
-    let _ = countdown_b.poll_unpin(&mut cx);
+        // We don't care if the futures are ready, as we poll manually
+        let waker = futures::task::noop_waker();
+        let mut cx = Context::from_waker(&waker);
 
-    std::thread::sleep(std::time::Duration::from_millis(300));
+        let _ = countdown_a.poll_unpin(&mut cx);
+        let _ = countdown_b.poll_unpin(&mut cx);
 
-    let _ = countdown_b.poll_unpin(&mut cx);
+        std::thread::sleep(std::time::Duration::from_millis(300));
+
+        let _ = countdown_b.poll_unpin(&mut cx);
+    });
+
+    tracing::info!("finished countdowns");
+
     info!("exit")
 }
 

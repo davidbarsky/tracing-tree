@@ -369,8 +369,12 @@ where
             let old_span = self.current_span.swap(span, Ordering::Acquire);
             eprintln!("Old span: {old_span}");
 
-            if old_span != 0 && span != old_span {
-                let old_span = ctx.span(&Id::from_u64(old_span));
+            if span != old_span {
+                let old_span = if old_span != 0 {
+                    ctx.span(&Id::from_u64(old_span))
+                } else {
+                    None
+                };
                 eprintln!(
                     "concurrent old: {:?}, new: {:?}",
                     old_span.as_ref().map(|v| v.metadata().name()),
@@ -492,11 +496,19 @@ where
     }
 
     fn on_close(&self, id: Id, ctx: Context<S>) {
-        let mut guard = &mut *self.bufs.lock().unwrap();
+        let bufs = &mut *self.bufs.lock().unwrap();
+
+        // Store the most recently entered span
+        let _ = self.current_span.compare_exchange(
+            id.into_u64(),
+            0,
+            Ordering::SeqCst,
+            Ordering::Relaxed,
+        );
 
         self.write_span_info(
             &id,
-            guard,
+            bufs,
             &ctx,
             SpanMode::Close {
                 verbose: self.config.verbose_exit,
@@ -505,7 +517,7 @@ where
 
         if self.config.verbose_exit {
             if let Some(span) = ctx.span(&id).and_then(|span| span.parent()) {
-                self.write_span_info(&span.id(), guard, &ctx, SpanMode::PostClose);
+                self.write_span_info(&span.id(), bufs, &ctx, SpanMode::PostClose);
             }
         }
     }

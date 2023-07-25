@@ -295,7 +295,7 @@ fn indent_block_with_lines(
             if indent == 0 {
                 match style {
                     SpanMode::Open { .. } => buf.push_str(LINE_OPEN),
-                    SpanMode::Retrace { .. } => buf.push_str(LINE_OPEN),
+                    SpanMode::Retrace { .. } => buf.push_str("*"),
                     SpanMode::Close { .. } => buf.push_str(LINE_CLOSE),
                     SpanMode::PreOpen | SpanMode::PostClose => {}
                     SpanMode::Event => {}
@@ -344,7 +344,7 @@ fn indent_block_with_lines(
             }
             buf.push_str(LINE_OPEN);
         }
-        SpanMode::Open { verbose: true } | SpanMode::Retrace { verbose: true } => {
+        SpanMode::Open { verbose: true } => {
             buf.push_str(LINE_VERT);
             for _ in 1..(indent_amount / 2) {
                 buf.push(' ');
@@ -361,6 +361,25 @@ fn indent_block_with_lines(
                 buf.push_str(LINE_OPEN);
             } else {
                 buf.push_str(LINE_VERT);
+            }
+        }
+        SpanMode::Retrace { verbose: true } => {
+            buf.push_str("I");
+            for _ in 1..(indent_amount / 2) {
+                buf.push(' ');
+            }
+            // We don't have the space for fancy rendering at single space indent.
+            if indent_amount > 1 {
+                buf.push('L');
+            }
+            for _ in (indent_amount / 2)..(indent_amount - 1) {
+                buf.push_str("_");
+            }
+            // We don't have the space for fancy rendering at single space indent.
+            if indent_amount > 1 {
+                buf.push_str("*");
+            } else {
+                buf.push_str("|");
             }
         }
         SpanMode::Close { verbose: false } => {

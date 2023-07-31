@@ -16,6 +16,7 @@ pub(crate) const LINE_OPEN: &str = "┐";
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum SpanMode {
+    /// Executed on the parent before entering a child span
     PreOpen,
     Open {
         verbose: bool,

@@ -275,7 +275,7 @@ where
             .count();
 
         if self.config.verbose_entry || matches!(style, SpanMode::Open { .. } | SpanMode::Event) {
-            eprintln!("span: {:?}", span.metadata().name());
+            eprintln!("span: {:?} {:?}", span.metadata().name(), style);
 
             if self.config.targets {
                 let target = span.metadata().target();
@@ -517,6 +517,10 @@ where
 
         if self.config.verbose_exit {
             if let Some(span) = ctx.span(&id).and_then(|span| span.parent()) {
+                // Consider parent as entered
+                self.current_span
+                    .store(span.id().into_u64(), Ordering::SeqCst);
+
                 self.write_span_info(&span.id(), bufs, &ctx, SpanMode::PostClose);
             }
         }

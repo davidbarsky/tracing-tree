@@ -211,9 +211,12 @@ where
         }
     }
 
-    pub fn with_lazy_entry(self, enabled: bool) -> Self {
+    /// Defers printing span opening until an event is generated within the span.
+    ///
+    /// Avoids printing empty spans with no generated events.
+    pub fn with_deferred_spans(self, enabled: bool) -> Self {
         Self {
-            config: self.config.with_lazy_entry(enabled),
+            config: self.config.with_deferred_spans(enabled),
             ..self
         }
     }
@@ -353,12 +356,12 @@ where
         let span = ctx.span(id).expect("in new_span but span does not exist");
 
         if span.extensions().get::<Data>().is_none() {
-            let data = Data::new(attrs, !self.config.lazy_entry);
+            let data = Data::new(attrs, !self.config.deferred_spans);
             span.extensions_mut().insert(data);
         }
 
         // Entry will be printed in on_event along with retrace
-        if self.config.lazy_entry {
+        if self.config.deferred_spans {
             return;
         }
 
@@ -541,7 +544,7 @@ where
         let span = ctx.span(&id);
 
         // Span was not printed, so don't print an exit
-        if self.config.lazy_entry
+        if self.config.deferred_spans
             && span
                 .as_ref()
                 .and_then(|v| v.extensions().get::<Data>().map(|v| v.printed))

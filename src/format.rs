@@ -57,7 +57,7 @@ pub struct Config {
     /// Whether to print squiggly brackets (`{}`) around the list of fields in a span.
     pub bracketed_fields: bool,
 
-    pub lazy_entry: bool,
+    pub deferred_spans: bool,
 
     pub span_modes: bool,
 }
@@ -117,9 +117,9 @@ impl Config {
         }
     }
 
-    pub fn with_lazy_entry(self, enable: bool) -> Self {
+    pub fn with_deferred_spans(self, enable: bool) -> Self {
         Self {
-            lazy_entry: enable,
+            deferred_spans: enable,
             ..self
         }
     }
@@ -175,7 +175,7 @@ impl Default for Config {
             verbose_exit: false,
             verbose_retrace: false,
             bracketed_fields: false,
-            lazy_entry: false,
+            deferred_spans: false,
             span_modes: false,
         }
     }

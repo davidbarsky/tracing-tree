@@ -2,7 +2,7 @@ pub(crate) mod format;
 pub mod time;
 
 use crate::time::FormatTime;
-use format::{Buffers, ColorLevel, Config, FmtEvent, SpanMode};
+use format::{write_span_mode, Buffers, ColorLevel, Config, FmtEvent, SpanMode};
 
 use is_terminal::IsTerminal;
 use nu_ansi_term::{Color, Style};
@@ -218,6 +218,14 @@ where
         }
     }
 
+    /// Prefixes each branch with the event mode, such as `open`, or `close`
+    pub fn with_span_modes(self, enabled: bool) -> Self {
+        Self {
+            config: self.config.with_span_modes(enabled),
+            ..self
+        }
+    }
+
     /// Whether to print `{}` around the fields when printing a span.
     /// This can help visually distinguish fields from the rest of the message.
     pub fn with_bracketed_fields(self, bracketed_fields: bool) -> Self {
@@ -267,6 +275,10 @@ where
 
         let mut current_buf = &mut bufs.current_buf;
 
+        if self.config.span_modes {
+            write_span_mode(current_buf, style)
+        }
+
         let indent = ctx
             .lookup_current()
             .as_ref()
@@ -275,9 +287,18 @@ where
             .flatten()
             .count();
 
-        if self.config.verbose_entry || matches!(style, SpanMode::Open { .. } | SpanMode::Event) {
-            eprintln!("span: {:?} {:?}", span.metadata().name(), style);
+        let should_write = match style {
+            SpanMode::Open { .. } | SpanMode::Event => true,
+            // Print the parent of a new span again before entering the child
+            SpanMode::PreOpen if self.config.verbose_entry => true,
+            SpanMode::Close { verbose } => verbose,
+            SpanMode::Retrace { verbose } => verbose,
+            // Generated if `verbose_exit` is enabled
+            SpanMode::PostClose => true,
+            _ => false,
+        };
 
+        if should_write {
             if self.config.targets {
                 let target = span.metadata().target();
                 write!(

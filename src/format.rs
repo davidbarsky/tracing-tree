@@ -58,6 +58,8 @@ pub struct Config {
     pub bracketed_fields: bool,
 
     pub lazy_entry: bool,
+
+    pub span_modes: bool,
 }
 
 impl Config {
@@ -122,6 +124,13 @@ impl Config {
         }
     }
 
+    pub fn with_span_modes(self, enable: bool) -> Self {
+        Self {
+            span_modes: enable,
+            ..self
+        }
+    }
+
     pub fn with_bracketed_fields(self, bracketed_fields: bool) -> Self {
         Self {
             bracketed_fields,
@@ -167,6 +176,7 @@ impl Default for Config {
             verbose_retrace: false,
             bracketed_fields: false,
             lazy_entry: false,
+            span_modes: false,
         }
     }
 }
@@ -234,6 +244,7 @@ impl Buffers {
             &prefix,
             style,
         );
+
         self.current_buf.clear();
         self.flush_indent_buf();
 
@@ -294,6 +305,22 @@ impl<'a> fmt::Display for ColorLevel<'a> {
         }
         .fmt(f)
     }
+}
+
+pub(crate) fn write_span_mode(buf: &mut String, style: SpanMode) {
+    match style {
+        SpanMode::Open { verbose: true } => buf.push_str("open(v)"),
+        SpanMode::Open { verbose: false } => buf.push_str("open"),
+        SpanMode::Retrace { verbose: true } => buf.push_str("retrace(v)"),
+        SpanMode::Retrace { verbose: false } => buf.push_str("retrace"),
+        SpanMode::Close { verbose: true } => buf.push_str("close(v)"),
+        SpanMode::Close { verbose: false } => buf.push_str("close"),
+        SpanMode::PreOpen => buf.push_str("pre_open"),
+        SpanMode::PostClose => buf.push_str("post_close"),
+        SpanMode::Event => buf.push_str("event"),
+    }
+
+    buf.push_str(": ")
 }
 
 fn indent_block_with_lines(

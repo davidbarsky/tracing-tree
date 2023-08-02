@@ -12,6 +12,7 @@ use std::{
     hint::spin_loop,
     io,
     iter::Fuse,
+    mem,
     sync::{
         atomic::{AtomicU64, Ordering},
         Mutex,
@@ -31,16 +32,19 @@ use tracing_subscriber::{
     registry::{self, LookupSpan, ScopeFromRoot, SpanRef},
 };
 
+// Span extension data
 pub(crate) struct Data {
     start: Instant,
     kvs: Vec<(&'static str, String)>,
+    printed: bool,
 }
 
 impl Data {
-    pub fn new(attrs: &Attributes<'_>) -> Self {
+    pub fn new(attrs: &Attributes<'_>, printed: bool) -> Self {
         let mut span = Self {
             start: Instant::now(),
             kvs: Vec::new(),
+            printed,
         };
         attrs.record(&mut span);
         span
@@ -63,13 +67,6 @@ where
     bufs: Mutex<Buffers>,
     config: Config,
     timer: FT,
-
-    /// The last seen span of this layer
-    ///
-    /// This serves to serialize spans as two events can be generated in different spans
-    /// without the spans entering and exiting beforehand. This happens for multithreaded code
-    /// and instrumented futures
-    current_span: AtomicU64,
 }
 
 impl Default for HierarchicalLayer {
@@ -91,7 +88,6 @@ impl HierarchicalLayer<fn() -> io::Stderr> {
             bufs: Mutex::new(Buffers::new()),
             config,
             timer: (),
-            current_span: AtomicU64::new(0),
         }
     }
 }
@@ -118,7 +114,6 @@ where
             config: self.config,
             bufs: self.bufs,
             timer: self.timer,
-            current_span: self.current_span,
         }
     }
 
@@ -144,7 +139,6 @@ where
             make_writer: self.make_writer,
             config: self.config,
             bufs: self.bufs,
-            current_span: self.current_span,
             timer,
         }
     }
@@ -213,6 +207,13 @@ where
     pub fn with_verbose_retrace(self, verbose_retrace: bool) -> Self {
         Self {
             config: self.config.with_verbose_retrace(verbose_retrace),
+            ..self
+        }
+    }
+
+    pub fn with_lazy_entry(self, enabled: bool) -> Self {
+        Self {
+            config: self.config.with_lazy_entry(enabled),
             ..self
         }
     }
@@ -329,16 +330,21 @@ where
 {
     fn on_new_span(&self, attrs: &Attributes, id: &Id, ctx: Context<S>) {
         let span = ctx.span(id).expect("in new_span but span does not exist");
+
         if span.extensions().get::<Data>().is_none() {
-            let data = Data::new(attrs);
+            let data = Data::new(attrs, !self.config.lazy_entry);
             span.extensions_mut().insert(data);
+        }
+
+        // Entry will be printed in on_event along with retrace
+        if self.config.lazy_entry {
+            return;
         }
 
         let bufs = &mut *self.bufs.lock().unwrap();
 
         // Store the most recently entered span
-        self.current_span
-            .store(span.id().into_u64(), Ordering::Release);
+        bufs.current_span = Some(span.id());
 
         if self.config.verbose_exit {
             if let Some(span) = span.parent() {
@@ -365,38 +371,46 @@ where
         let bufs = &mut *guard;
 
         if let Some((span_id, current_span)) = &span {
-            let span = span_id.into_u64();
-            let old_span = self.current_span.swap(span, Ordering::Acquire);
-            eprintln!("Old span: {old_span}");
+            if self.config.verbose_retrace
+                || current_span
+                    .extensions()
+                    .get::<Data>()
+                    .is_some_and(|v| !v.printed)
+            {
+                if let Some(data) = current_span.extensions_mut().get_mut::<Data>() {
+                    data.printed = true;
+                }
 
-            if span != old_span {
-                let old_span = if old_span != 0 {
-                    ctx.span(&Id::from_u64(old_span))
-                } else {
-                    None
-                };
-                eprintln!(
-                    "concurrent old: {:?}, new: {:?}",
-                    old_span.as_ref().map(|v| v.metadata().name()),
-                    current_span.metadata().name()
-                );
+                let old_span_id = bufs.current_span.replace((*span_id).clone());
 
-                let old_path = old_span.as_ref().map(scope_path).into_iter().flatten();
-                let new_path = scope_path(current_span);
+                eprintln!("Old span: {old_span_id:?}");
 
-                // Print the path from the common base of the two spans
-                let new_path = DifferenceIter::new(old_path, new_path, |v| v.id());
+                if Some(*span_id) != old_span_id.as_ref() {
+                    let old_span = old_span_id.as_ref().and_then(|v| ctx.span(v));
 
-                for span in new_path {
-                    eprintln!("Writing span {:?}", span.id());
-                    self.write_span_info(
-                        &span.id(),
-                        bufs,
-                        &ctx,
-                        SpanMode::Retrace {
-                            verbose: self.config.verbose_retrace,
-                        },
-                    )
+                    eprintln!(
+                        "concurrent old: {:?}, new: {:?}",
+                        old_span.as_ref().map(|v| v.metadata().name()),
+                        current_span.metadata().name()
+                    );
+
+                    let old_path = old_span.as_ref().map(scope_path).into_iter().flatten();
+                    let new_path = scope_path(current_span);
+
+                    // Print the path from the common base of the two spans
+                    let new_path = DifferenceIter::new(old_path, new_path, |v| v.id());
+
+                    for span in new_path {
+                        eprintln!("Writing span {:?}", span.id());
+                        self.write_span_info(
+                            &span.id(),
+                            bufs,
+                            &ctx,
+                            SpanMode::Retrace {
+                                verbose: self.config.verbose_retrace,
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -499,12 +513,19 @@ where
         let bufs = &mut *self.bufs.lock().unwrap();
 
         // Store the most recently entered span
-        let _ = self.current_span.compare_exchange(
-            id.into_u64(),
-            0,
-            Ordering::SeqCst,
-            Ordering::Relaxed,
-        );
+        if bufs.current_span.as_ref() == Some(&id) {
+            bufs.current_span = None;
+        }
+
+        let span = ctx.span(&id);
+
+        // Span was not printed, so don't print an exit
+        if self.config.lazy_entry
+            && span
+                .as_ref()
+                .and_then(|v| v.extensions().get::<Data>().map(|v| v.printed))
+                != Some(true)
+        {}
 
         self.write_span_info(
             &id,
@@ -516,12 +537,11 @@ where
         );
 
         if self.config.verbose_exit {
-            if let Some(span) = ctx.span(&id).and_then(|span| span.parent()) {
+            if let Some(parent_span) = span.and_then(|span| span.parent()) {
                 // Consider parent as entered
-                self.current_span
-                    .store(span.id().into_u64(), Ordering::SeqCst);
+                bufs.current_span = Some(parent_span.id());
 
-                self.write_span_info(&span.id(), bufs, &ctx, SpanMode::PostClose);
+                self.write_span_info(&parent_span.id(), bufs, &ctx, SpanMode::PostClose);
             }
         }
     }

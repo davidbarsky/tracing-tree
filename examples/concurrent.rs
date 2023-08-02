@@ -19,6 +19,7 @@ fn main() {
         .with_verbose_exit(true)
         .with_verbose_entry(true)
         .with_verbose_retrace(true)
+        .with_lazy_entry(true)
         .with_targets(true);
 
     let subscriber = Registry::default().with(layer);
@@ -40,6 +41,10 @@ fn main() {
     info!("listening");
 
     let peer1 = span!(Level::TRACE, "conn", peer_addr = "82.9.9.9", port = 42381);
+
+    span!(Level::INFO, "empty-span").in_scope(|| {
+        // empty span
+    });
 
     debug!("starting countdowns");
     debug_span!("countdowns").in_scope(|| {

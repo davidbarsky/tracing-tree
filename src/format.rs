@@ -5,7 +5,7 @@ use std::{
 };
 use tracing_core::{
     field::{Field, Visit},
-    Level,
+    span, Level,
 };
 
 pub(crate) const LINE_VERT: &str = "│";
@@ -56,6 +56,8 @@ pub struct Config {
     pub verbose_retrace: bool,
     /// Whether to print squiggly brackets (`{}`) around the list of fields in a span.
     pub bracketed_fields: bool,
+
+    pub lazy_entry: bool,
 }
 
 impl Config {
@@ -113,6 +115,13 @@ impl Config {
         }
     }
 
+    pub fn with_lazy_entry(self, enable: bool) -> Self {
+        Self {
+            lazy_entry: enable,
+            ..self
+        }
+    }
+
     pub fn with_bracketed_fields(self, bracketed_fields: bool) -> Self {
         Self {
             bracketed_fields,
@@ -157,6 +166,7 @@ impl Default for Config {
             verbose_exit: false,
             verbose_retrace: false,
             bracketed_fields: false,
+            lazy_entry: false,
         }
     }
 }
@@ -165,6 +175,13 @@ impl Default for Config {
 pub struct Buffers {
     pub current_buf: String,
     pub indent_buf: String,
+
+    /// The last seen span of this layer
+    ///
+    /// This serves to serialize spans as two events can be generated in different spans
+    /// without the spans entering and exiting beforehand. This happens for multithreaded code
+    /// and instrumented futures
+    pub current_span: Option<span::Id>,
 }
 
 impl Buffers {
@@ -172,6 +189,7 @@ impl Buffers {
         Self {
             current_buf: String::new(),
             indent_buf: String::new(),
+            current_span: None,
         }
     }
 
@@ -331,21 +349,14 @@ fn indent_block_with_lines(
             }
             buf.push_str(LINE_OPEN);
         }
-        SpanMode::Open { verbose: false } => {
+        SpanMode::Open { verbose: false } | SpanMode::Retrace { verbose: false } => {
             buf.push_str(LINE_BRANCH);
             for _ in 1..indent_amount {
                 buf.push_str(LINE_HORIZ);
             }
             buf.push_str(LINE_OPEN);
         }
-        SpanMode::Retrace { verbose: false } => {
-            buf.push_str(LINE_BRANCH);
-            for _ in 1..indent_amount {
-                buf.push_str(LINE_HORIZ);
-            }
-            buf.push_str(LINE_OPEN);
-        }
-        SpanMode::Open { verbose: true } => {
+        SpanMode::Open { verbose: true } | SpanMode::Retrace { verbose: true } => {
             buf.push_str(LINE_VERT);
             for _ in 1..(indent_amount / 2) {
                 buf.push(' ');
@@ -362,25 +373,6 @@ fn indent_block_with_lines(
                 buf.push_str(LINE_OPEN);
             } else {
                 buf.push_str(LINE_VERT);
-            }
-        }
-        SpanMode::Retrace { verbose: true } => {
-            buf.push_str("I");
-            for _ in 1..(indent_amount / 2) {
-                buf.push(' ');
-            }
-            // We don't have the space for fancy rendering at single space indent.
-            if indent_amount > 1 {
-                buf.push('L');
-            }
-            for _ in (indent_amount / 2)..(indent_amount - 1) {
-                buf.push_str("_");
-            }
-            // We don't have the space for fancy rendering at single space indent.
-            if indent_amount > 1 {
-                buf.push_str("*");
-            } else {
-                buf.push_str("|");
             }
         }
         SpanMode::Close { verbose: false } => {

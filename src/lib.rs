@@ -367,7 +367,7 @@ where
         // Store the most recently entered span
         bufs.current_span = Some(span.id());
 
-        if self.config.verbose_exit {
+        if self.config.verbose_entry {
             if let Some(span) = span.parent() {
                 self.write_span_info(&span.id(), bufs, &ctx, SpanMode::PreOpen);
             }

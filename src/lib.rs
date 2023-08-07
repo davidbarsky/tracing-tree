@@ -36,7 +36,7 @@ use tracing_subscriber::{
 pub(crate) struct Data {
     start: Instant,
     kvs: Vec<(&'static str, String)>,
-    printed: bool,
+    written: bool,
 }
 
 impl Data {
@@ -44,7 +44,7 @@ impl Data {
         let mut span = Self {
             start: Instant::now(),
             kvs: Vec::new(),
-            printed,
+            written: printed,
         };
         attrs.record(&mut span);
         span
@@ -265,13 +265,18 @@ where
         Ok(())
     }
 
-    fn write_span_info<S>(&self, id: &Id, bufs: &mut Buffers, ctx: &Context<S>, style: SpanMode)
-    where
+    fn write_span_info<S>(
+        &self,
+        span: &SpanRef<S>,
+        bufs: &mut Buffers,
+        ctx: &Context<S>,
+        style: SpanMode,
+    ) where
         S: Subscriber + for<'span> LookupSpan<'span>,
     {
-        let span = ctx
-            .span(id)
-            .expect("in on_enter/on_exit but span does not exist");
+        // let span = ctx
+        //     .span(id)
+        //     .expect("in on_enter/on_exit but span does not exist");
 
         let ext = span.extensions();
         let data = ext.get::<Data>().expect("span does not have data");
@@ -282,13 +287,7 @@ where
             write_span_mode(current_buf, style)
         }
 
-        let indent = ctx
-            .lookup_current()
-            .as_ref()
-            .map(scope_path)
-            .into_iter()
-            .flatten()
-            .count();
+        let indent = scope_path(span).skip(1).count();
 
         let should_write = match style {
             SpanMode::Open { .. } | SpanMode::Event => true,
@@ -372,12 +371,12 @@ where
 
         if self.config.verbose_entry {
             if let Some(span) = span.parent() {
-                self.write_span_info(&span.id(), bufs, &ctx, SpanMode::PreOpen);
+                self.write_span_info(&span, bufs, &ctx, SpanMode::PreOpen);
             }
         }
 
         self.write_span_info(
-            id,
+            &span,
             bufs,
             &ctx,
             SpanMode::Open {
@@ -399,10 +398,10 @@ where
                 || current_span
                     .extensions()
                     .get::<Data>()
-                    .is_some_and(|v| !v.printed)
+                    .is_some_and(|v| !v.written)
             {
                 if let Some(data) = current_span.extensions_mut().get_mut::<Data>() {
-                    data.printed = true;
+                    data.written = true;
                 }
 
                 let old_span_id = bufs.current_span.replace((*span_id).clone());
@@ -412,11 +411,11 @@ where
                 if Some(*span_id) != old_span_id.as_ref() {
                     let old_span = old_span_id.as_ref().and_then(|v| ctx.span(v));
 
-                    eprintln!(
-                        "concurrent old: {:?}, new: {:?}",
-                        old_span.as_ref().map(|v| v.metadata().name()),
-                        current_span.metadata().name()
-                    );
+                    // eprintln!(
+                    //     "concurrent old: {:?}, new: {:?}",
+                    //     old_span.as_ref().map(|v| v.metadata().name()),
+                    //     current_span.metadata().name()
+                    // );
 
                     let old_path = old_span.as_ref().map(scope_path).into_iter().flatten();
                     let new_path = scope_path(current_span);
@@ -425,9 +424,8 @@ where
                     let new_path = DifferenceIter::new(old_path, new_path, |v| v.id());
 
                     for span in new_path {
-                        eprintln!("Writing span {:?}", span.id());
                         self.write_span_info(
-                            &span.id(),
+                            &span,
                             bufs,
                             &ctx,
                             SpanMode::Retrace {
@@ -541,18 +539,15 @@ where
             bufs.current_span = None;
         }
 
-        let span = ctx.span(&id);
+        let span = ctx.span(&id).expect("invalid span in on_close");
 
         // Span was not printed, so don't print an exit
         if self.config.deferred_spans
-            && span
-                .as_ref()
-                .and_then(|v| v.extensions().get::<Data>().map(|v| v.printed))
-                != Some(true)
+            && span.extensions().get::<Data>().map(|v| v.written) != Some(true)
         {}
 
         self.write_span_info(
-            &id,
+            &span,
             bufs,
             &ctx,
             SpanMode::Close {
@@ -561,11 +556,11 @@ where
         );
 
         if self.config.verbose_exit {
-            if let Some(parent_span) = span.and_then(|span| span.parent()) {
+            if let Some(parent_span) = span.parent() {
                 // Consider parent as entered
                 bufs.current_span = Some(parent_span.id());
 
-                self.write_span_info(&parent_span.id(), bufs, &ctx, SpanMode::PostClose);
+                self.write_span_info(&parent_span, bufs, &ctx, SpanMode::PostClose);
             }
         }
     }

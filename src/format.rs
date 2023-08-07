@@ -332,6 +332,7 @@ fn indent_block_with_lines(
     style: SpanMode,
 ) {
     let indent_spaces = indent * indent_amount;
+
     if lines.is_empty() {
         return;
     } else if indent_spaces == 0 {
@@ -343,7 +344,12 @@ fn indent_block_with_lines(
                     SpanMode::Open { .. } => buf.push_str(LINE_OPEN),
                     SpanMode::Retrace { .. } => buf.push_str("*"),
                     SpanMode::Close { .. } => buf.push_str(LINE_CLOSE),
-                    SpanMode::PreOpen | SpanMode::PostClose => {}
+                    SpanMode::PreOpen | SpanMode::PostClose => {
+                        unreachable!(
+                            "indent_amount: {} {}, style: {:?}",
+                            indent_amount, indent, style
+                        )
+                    }
                     SpanMode::Event => {}
                 }
             }
@@ -352,6 +358,7 @@ fn indent_block_with_lines(
         }
         return;
     }
+
     let mut s = String::with_capacity(indent_spaces + prefix.len());
     s.push_str(prefix);
 
@@ -383,7 +390,7 @@ fn indent_block_with_lines(
             }
             buf.push_str(LINE_OPEN);
         }
-        SpanMode::Open { verbose: true } | SpanMode::Retrace { verbose: true } => {
+        SpanMode::Open { verbose: true } => {
             buf.push_str(LINE_VERT);
             for _ in 1..(indent_amount / 2) {
                 buf.push(' ');
@@ -401,6 +408,13 @@ fn indent_block_with_lines(
             } else {
                 buf.push_str(LINE_VERT);
             }
+        }
+        SpanMode::Retrace { verbose: true } => {
+            buf.push_str(LINE_BRANCH);
+            for _ in 1..indent_amount {
+                buf.push_str(LINE_HORIZ);
+            }
+            buf.push_str(LINE_OPEN);
         }
         SpanMode::Close { verbose: false } => {
             buf.push_str(LINE_BRANCH);
@@ -468,7 +482,7 @@ fn indent_block_with_lines(
 fn indent_block(
     block: &mut String,
     buf: &mut String,
-    indent: usize,
+    mut indent: usize,
     indent_amount: usize,
     indent_lines: bool,
     prefix: &str,
@@ -477,6 +491,12 @@ fn indent_block(
     let lines: Vec<&str> = block.lines().collect();
     let indent_spaces = indent * indent_amount;
     buf.reserve(block.len() + (lines.len() * indent_spaces));
+
+    // The PreOpen and PostClose events are generated for the indent of the child span
+    if matches!(style, SpanMode::PreOpen | SpanMode::PostClose) {
+        indent += 1;
+    }
+
     if indent_lines {
         indent_block_with_lines(&lines, buf, indent, indent_amount, prefix, style);
     } else {

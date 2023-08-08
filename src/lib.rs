@@ -204,9 +204,9 @@ where
     /// the meantime
     /// This helps during concurrent or multi-threaded events where threads are entered, but not
     /// necessarily *exited* before other *divergent* spans are entered and generating events.
-    pub fn with_verbose_retrace(self, verbose_retrace: bool) -> Self {
+    pub fn with_span_retrace(self, enabled: bool) -> Self {
         Self {
-            config: self.config.with_verbose_retrace(verbose_retrace),
+            config: self.config.with_span_retrace(enabled),
             ..self
         }
     }
@@ -394,7 +394,7 @@ where
         let bufs = &mut *guard;
 
         if let Some((span_id, current_span)) = &span {
-            if self.config.verbose_retrace
+            if self.config.span_retrace
                 || current_span
                     .extensions()
                     .get::<Data>()
@@ -405,8 +405,6 @@ where
                 }
 
                 let old_span_id = bufs.current_span.replace((*span_id).clone());
-
-                eprintln!("Old span: {old_span_id:?}");
 
                 if Some(*span_id) != old_span_id.as_ref() {
                     let old_span = old_span_id.as_ref().and_then(|v| ctx.span(v));
@@ -429,7 +427,7 @@ where
                             bufs,
                             &ctx,
                             SpanMode::Retrace {
-                                verbose: self.config.verbose_retrace,
+                                verbose: self.config.span_retrace,
                             },
                         )
                     }

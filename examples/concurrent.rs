@@ -18,7 +18,8 @@ fn main() {
         .with_thread_ids(true)
         .with_verbose_exit(true)
         .with_verbose_entry(true)
-        .with_verbose_retrace(true)
+        .with_span_retrace(true)
+        .with_deferred_spans(true)
         .with_deferred_spans(false)
         .with_span_modes(true)
         .with_targets(true);
@@ -48,34 +49,32 @@ fn main() {
     });
 
     debug!("starting countdowns");
-    debug_span!("countdowns").in_scope(
-        || {
-            let mut countdown_a = CountdownFuture {
-                label: "a",
-                count: 3,
-            }
-            .instrument(span!(Level::DEBUG, "countdown_a"))
-            .fuse();
+    debug_span!("countdowns").in_scope(|| {
+        let mut countdown_a = CountdownFuture {
+            label: "a",
+            count: 3,
+        }
+        .instrument(span!(Level::DEBUG, "countdown_a"))
+        .fuse();
 
-            let mut countdown_b = CountdownFuture {
-                label: "b",
-                count: 5,
-            }
-            .instrument(span!(Level::DEBUG, "countdown_b"))
-            .fuse();
+        let mut countdown_b = CountdownFuture {
+            label: "b",
+            count: 5,
+        }
+        .instrument(span!(Level::DEBUG, "countdown_b"))
+        .fuse();
 
-            // We don't care if the futures are ready, as we poll manually
-            let waker = futures::task::noop_waker();
-            let mut cx = Context::from_waker(&waker);
+        // We don't care if the futures are ready, as we poll manually
+        let waker = futures::task::noop_waker();
+        let mut cx = Context::from_waker(&waker);
 
-            let _ = countdown_a.poll_unpin(&mut cx);
-            let _ = countdown_b.poll_unpin(&mut cx);
+        let _ = countdown_a.poll_unpin(&mut cx);
+        let _ = countdown_b.poll_unpin(&mut cx);
 
-            std::thread::sleep(std::time::Duration::from_millis(300));
+        std::thread::sleep(std::time::Duration::from_millis(300));
 
-            let _ = countdown_b.poll_unpin(&mut cx);
-        }, //
-    );
+        let _ = countdown_b.poll_unpin(&mut cx);
+    });
 
     tracing::info!("finished countdowns");
 

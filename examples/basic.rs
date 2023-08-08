@@ -11,7 +11,6 @@ fn main() {
         .with_thread_ids(true)
         .with_verbose_exit(true)
         .with_verbose_entry(true)
-        .with_span_modes(true)
         .with_targets(true);
 
     let subscriber = Registry::default().with(layer);

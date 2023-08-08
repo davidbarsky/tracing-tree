@@ -53,12 +53,12 @@ pub struct Config {
     /// Whether to print the current span before exiting it.
     pub verbose_exit: bool,
     /// Print the path leading up to a span if a different span was entered concurrently
-    pub verbose_retrace: bool,
+    pub span_retrace: bool,
     /// Whether to print squiggly brackets (`{}`) around the list of fields in a span.
     pub bracketed_fields: bool,
-
+    /// Defer printing a span until an event is generated inside of it
     pub deferred_spans: bool,
-
+    /// Print a label of the span mode (open/close etc).
     pub span_modes: bool,
 }
 
@@ -110,9 +110,9 @@ impl Config {
         }
     }
 
-    pub fn with_verbose_retrace(self, verbose_retrace: bool) -> Self {
+    pub fn with_span_retrace(self, enabled: bool) -> Self {
         Self {
-            verbose_retrace,
+            span_retrace: enabled,
             ..self
         }
     }
@@ -173,7 +173,7 @@ impl Default for Config {
             wraparound: usize::max_value(),
             verbose_entry: false,
             verbose_exit: false,
-            verbose_retrace: false,
+            span_retrace: false,
             bracketed_fields: false,
             deferred_spans: false,
             span_modes: false,

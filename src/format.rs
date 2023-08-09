@@ -1,5 +1,6 @@
 use nu_ansi_term::Color;
 use std::{
+    cmp::Ordering,
     fmt::{self, Write as _},
     io,
 };
@@ -11,8 +12,13 @@ use tracing_core::{
 pub(crate) const LINE_VERT: &str = "│";
 const LINE_HORIZ: &str = "─";
 pub(crate) const LINE_BRANCH: &str = "├";
+pub(crate) const LINE_BRANCH_DOWN: &str = "┬";
 pub(crate) const LINE_CLOSE: &str = "┘";
+pub(crate) const LINE_OPEN_DOWN: &str = "┌";
+pub(crate) const LINE_OPEN_UP: &str = "└";
 pub(crate) const LINE_OPEN: &str = "┐";
+
+const LINE_DASH_VERT: &str = "┆";
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum SpanMode {
@@ -24,8 +30,15 @@ pub(crate) enum SpanMode {
     Close {
         verbose: bool,
     },
+    /// Connects two disjoint levels of indentation together for the `pre_open` lines to connect
+    RetraceBoundary {
+        to: usize,
+        from: usize,
+    },
     /// A span has been entered but another *different* span has been entered in the meantime.
-    Retrace,
+    Retrace {
+        verbose: bool,
+    },
     PostClose,
     Event,
 }
@@ -249,7 +262,7 @@ impl Buffers {
         // Render something when wraparound occurs so the user is aware of it
         if config.indent_lines {
             match style {
-                SpanMode::PreOpen | SpanMode::Open { .. } => {
+                SpanMode::PreOpen { .. } | SpanMode::Open { .. } => {
                     if indent > 0 && (indent + 1) % config.wraparound == 0 {
                         self.current_buf.push_str(&prefix);
                         for _ in 0..(indent % config.wraparound * config.indent_amount) {
@@ -309,10 +322,14 @@ pub(crate) fn write_span_mode(buf: &mut String, style: SpanMode) {
     match style {
         SpanMode::Open { verbose: true } => buf.push_str("open(v)"),
         SpanMode::Open { verbose: false } => buf.push_str("open"),
-        SpanMode::Retrace => buf.push_str("retrace"),
+        SpanMode::Retrace { verbose: false } => buf.push_str("retrace"),
+        SpanMode::Retrace { verbose: true } => buf.push_str("retrace(v)"),
         SpanMode::Close { verbose: true } => buf.push_str("close(v)"),
         SpanMode::Close { verbose: false } => buf.push_str("close"),
         SpanMode::PreOpen => buf.push_str("pre_open"),
+        SpanMode::RetraceBoundary { to, from } => {
+            write!(buf, "retrace_boundary({}:{})", from, to).unwrap()
+        }
         SpanMode::PostClose => buf.push_str("post_close"),
         SpanMode::Event => buf.push_str("event"),
     }
@@ -324,6 +341,7 @@ fn indent_block_with_lines(
     lines: &[&str],
     buf: &mut String,
     indent: usize,
+    // width of one level of indent
     indent_amount: usize,
     prefix: &str,
     style: SpanMode,
@@ -341,7 +359,8 @@ fn indent_block_with_lines(
                     SpanMode::Open { .. } => buf.push_str(LINE_OPEN),
                     SpanMode::Retrace { .. } => buf.push_str(LINE_OPEN),
                     SpanMode::Close { .. } => buf.push_str(LINE_CLOSE),
-                    SpanMode::PreOpen | SpanMode::PostClose => {}
+                    SpanMode::RetraceBoundary { .. } => unreachable!(),
+                    SpanMode::PreOpen { .. } | SpanMode::PostClose => {}
                     SpanMode::Event => {}
                 }
             }
@@ -375,14 +394,45 @@ fn indent_block_with_lines(
             }
             buf.push_str(LINE_OPEN);
         }
-        SpanMode::Open { verbose: false } | SpanMode::Retrace => {
+        // Print a divider connecting two diverged indents
+        SpanMode::RetraceBoundary { to, from } => {
+            let write_line = |s: &mut String, len| {
+                for _ in 0..len {
+                    s.push_str(LINE_HORIZ);
+                }
+            };
+
+            match to.cmp(&from) {
+                //          |
+                // *--------*
+                // |
+                Ordering::Less => {
+                    buf.push_str(LINE_OPEN_DOWN);
+                    write_line(buf, (from - to - 1) * indent_amount);
+                    buf.push_str(LINE_CLOSE);
+                }
+                // |
+                // *
+                // |
+                Ordering::Equal => buf.push_str(LINE_DASH_VERT),
+                // |
+                // *--------*
+                //          |
+                Ordering::Greater => {
+                    buf.push_str(LINE_OPEN_UP);
+                    write_line(buf, to - from);
+                    buf.push_str(LINE_OPEN);
+                }
+            }
+        }
+        SpanMode::Open { verbose: false } | SpanMode::Retrace { verbose: false } => {
             buf.push_str(LINE_BRANCH);
             for _ in 1..indent_amount {
                 buf.push_str(LINE_HORIZ);
             }
             buf.push_str(LINE_OPEN);
         }
-        SpanMode::Open { verbose: true } => {
+        SpanMode::Open { verbose: true } | SpanMode::Retrace { verbose: true } => {
             buf.push_str(LINE_VERT);
             for _ in 1..(indent_amount / 2) {
                 buf.push(' ');
@@ -479,8 +529,12 @@ fn indent_block(
 
     // The PreOpen and PostClose need to match up with the indent of the entered child span one more indent
     // deep
-    if matches!(style, SpanMode::PreOpen | SpanMode::PostClose) {
-        indent += 1;
+    match style {
+        SpanMode::PreOpen | SpanMode::PostClose => {
+            indent += 1;
+        }
+        SpanMode::RetraceBoundary { to, from } => indent = to.min(from),
+        _ => (),
     }
 
     if indent_lines {

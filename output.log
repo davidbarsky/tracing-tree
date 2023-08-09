@@ -1,0 +1,50 @@
+   Compiling tracing-tree v0.2.3 (/Users/teiroberts/dev/tracing-tree)
+warning: unused imports: `error`, `instrument`
+ --> examples/concurrent.rs:8:34
+  |
+8 | use tracing::{debug, debug_span, error, info, instrument, span, warn, Instrument, Level};
+  |                                  ^^^^^        ^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: `tracing-tree` (example "concurrent") generated 1 warning (run `cargo fix --example "concurrent"` to apply 1 suggestion)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.45s
+     Running `target/debug/examples/concurrent`
+1:main┐open(v): concurrent::hierarchical-example version=0.1
+1:main├─┐open: concurrent::server host="localhost", port=8080
+1:main│ ├─  0ms  INFO concurrent starting
+1:main│ ├─  1s   INFO concurrent listening
+1:main│ ├┐pre_open: concurrent::server host="localhost", port=8080
+1:main│ │└┐open(v): concurrent::empty-span 
+1:main│ │┌┘close(v): concurrent::empty-span 
+1:main│ ├┘post_close: concurrent::server host="localhost", port=8080
+1:main│ ├─  1s  DEBUG concurrent starting countdowns
+1:main│ ├┐pre_open: concurrent::server host="localhost", port=8080
+1:main│ │└┐open(v): concurrent::countdowns 
+1:main│ │ ├─┐open: concurrent::countdown_a 
+1:main│ │ │ ├─  0ms DEBUG concurrent polling countdown, label="a", count=3
+1:main│ │ │ ├┐pre_open: concurrent::countdown_a 
+1:main│ │ │└┐open(v): concurrent::countdown_b 
+1:main│ │ │ ├─  0ms DEBUG concurrent polling countdown, label="b", count=5
+1:main│ │ │ ├─304ms DEBUG concurrent polling countdown, label="b", count=4
+1:main│ │ │ ├┐pre_open: concurrent::countdown_b 
+1:main│ │└┐open(v): concurrent::conn peer_addr="82.9.9.9", port=42381
+1:main│ │ ├─304ms  WARN concurrent peer1 warning
+1:main│ │ ├┐pre_open: concurrent::conn peer_addr="82.9.9.9", port=42381
+1:main│ │└┐open(v): concurrent::countdowns 
+1:main│ │ ├─304ms  INFO concurrent finished polling countdowns
+1:main│ │ │┌┘close(v): concurrent::countdown_b 
+1:main│ │ ├┘post_close: concurrent::countdowns 
+1:main│ │ │┌┘close(v): concurrent::countdown_a 
+1:main│ │ ├┘post_close: concurrent::countdowns 
+1:main│ │┌┘close(v): concurrent::countdowns 
+1:main│ ├┘post_close: concurrent::server host="localhost", port=8080
+1:main│ │┌┘close(v): concurrent::conn peer_addr="82.9.9.9", port=42381
+1:main│ ├┘post_close: concurrent::server host="localhost", port=8080
+1:main│ ├─  1s   INFO concurrent all done!
+1:main│ ├─  1s   INFO concurrent exit
+1:main│┌┘close(v): concurrent::server host="localhost", port=8080
+1:main├┘post_close: concurrent::hierarchical-example version=0.1
+1:main┘close(v): concurrent::hierarchical-example version=0.1
+
+[Process exited 0]

@@ -16,6 +16,8 @@ fn main() {
         .with_indent_amount(4)
         .with_thread_names(true)
         .with_thread_ids(true)
+        .with_verbose_exit(true)
+        .with_verbose_entry(true)
         .with_span_retrace(true)
         .with_deferred_spans(true)
         .with_targets(true);

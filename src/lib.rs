@@ -279,29 +279,14 @@ where
             false
         };
 
+        // Also handle deferred spans along with retrace since deferred spans may need to print
+        // multiple spans at once as a whole tree can be deferred
         if self.config.span_retrace || should_write {
-            let was_written = if let Some(data) = new_span.extensions_mut().get_mut::<Data>() {
-                mem::replace(&mut data.written, true)
-            } else {
-                // `on_new_span` was not called, before
-                // Consider if this should panic instead, which is *technically* correct but is
-                // bad behavior for a logging layer in production.
-                false
-            };
-
             let old_span_id = bufs.current_span.replace((new_span.id()).clone());
             let old_span_id = old_span_id.as_ref();
 
             if Some(&new_span.id()) != old_span_id {
                 let old_span = old_span_id.as_ref().and_then(|v| ctx.span(v));
-
-                // Print the previous span before entering a new deferred or retraced span
-                if self.config.verbose_entry {
-                    if let Some(old_span) = &old_span {
-                        self.write_span_info(old_span, bufs, SpanMode::PreOpen);
-                    }
-                }
-
                 let old_path = old_span.as_ref().map(scope_path).into_iter().flatten();
 
                 let new_path = scope_path(new_span);
@@ -309,16 +294,32 @@ where
                 // Print the path from the common base of the two spans
                 let new_path = DifferenceIter::new(old_path, new_path, |v| v.id());
 
-                for span in new_path {
+                for (i, span) in new_path.enumerate() {
+                    // Mark traversed spans as *written*
+                    let was_written = if let Some(data) = span.extensions_mut().get_mut::<Data>() {
+                        mem::replace(&mut data.written, true)
+                    } else {
+                        // `on_new_span` was not called, before
+                        // Consider if this should panic instead, which is *technically* correct but is
+                        // bad behavior for a logging layer in production.
+                        false
+                    };
+
+                    // Print the previous span before entering a new deferred or retraced span
+                    if i == 0 && self.config.verbose_entry {
+                        if let Some(parent) = &span.parent() {
+                            self.write_span_info(parent, bufs, SpanMode::PreOpen);
+                        }
+                    }
+                    let verbose = self.config.verbose_entry && i == 0;
+
                     self.write_span_info(
                         &span,
                         bufs,
                         if was_written {
-                            SpanMode::Retrace
+                            SpanMode::Retrace { verbose }
                         } else {
-                            SpanMode::Open {
-                                verbose: self.config.verbose_entry,
-                            }
+                            SpanMode::Open { verbose }
                         },
                     )
                 }
@@ -344,10 +345,10 @@ where
         let should_write = match style {
             SpanMode::Open { .. } | SpanMode::Event => true,
             // Print the parent of a new span again before entering the child
-            SpanMode::PreOpen if self.config.verbose_entry => true,
+            SpanMode::PreOpen { .. } if self.config.verbose_entry => true,
             SpanMode::Close { verbose } => verbose,
             // Generated if `span_retrace` is enabled
-            SpanMode::Retrace => true,
+            SpanMode::Retrace { .. } => true,
             // Generated if `verbose_exit` is enabled
             SpanMode::PostClose => true,
             _ => false,
@@ -546,19 +547,16 @@ where
     fn on_close(&self, id: Id, ctx: Context<S>) {
         let bufs = &mut *self.bufs.lock().unwrap();
 
-        // Store the most recently entered span
-        if bufs.current_span.as_ref() == Some(&id) {
-            // bufs.current_span = None;
-        }
-
         let span = ctx.span(&id).expect("invalid span in on_close");
 
         // Span was not printed, so don't print an exit
         if self.config.deferred_spans
             && span.extensions().get::<Data>().map(|v| v.written) != Some(true)
-        {}
+        {
+            return;
+        }
 
-        self.write_retrace_span(&span, bufs, &ctx);
+        // self.write_retrace_span(&span, bufs, &ctx);
 
         self.write_span_info(
             &span,
@@ -568,10 +566,10 @@ where
             },
         );
 
-        if self.config.verbose_exit {
-            if let Some(parent_span) = span.parent() {
+        if let Some(parent_span) = span.parent() {
+            bufs.current_span = Some(parent_span.id());
+            if self.config.verbose_exit {
                 // Consider parent as entered
-                bufs.current_span = Some(parent_span.id());
 
                 self.write_span_info(&parent_span, bufs, SpanMode::PostClose);
             }

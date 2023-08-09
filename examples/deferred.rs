@@ -33,57 +33,67 @@ fn main() {
     let _e2 = server_span.enter();
     info!("starting");
     std::thread::sleep(std::time::Duration::from_millis(1000));
+
+    span!(Level::INFO, "empty-span").in_scope(|| {
+        // empty span
+    });
+
     info!("listening");
-    let peer1 = span!(Level::DEBUG, "conn", peer_addr = "82.9.9.9", port = 42381);
-    peer1.in_scope(|| {
-        debug!(peer = "peer1", "connected");
-        std::thread::sleep(std::time::Duration::from_millis(300));
-        debug!(length = 2, "message received");
+    // Defer two levels of spans
+    println!("Deferring two levels of spans");
+    span!(Level::INFO, "connections").in_scope(|| {
+        let peer1 = span!(Level::DEBUG, "conn", peer_addr = "82.9.9.9", port = 42381);
+        peer1.in_scope(|| {
+            debug!(peer = "peer1", "connected");
+            std::thread::sleep(std::time::Duration::from_millis(300));
+            debug!(length = 2, "message received");
+        });
+
+        drop(peer1);
+        let peer2 = span!(Level::DEBUG, "conn", peer_addr = "82.9.9.9", port = 61548);
+
+        // This span will not be printed at all since no event in it will pass the filter
+        peer2.in_scope(|| {
+            trace!(peer = "peer2", "connected");
+            std::thread::sleep(std::time::Duration::from_millis(300));
+            trace!(length = 2, "message received");
+        });
+        drop(peer2);
+        let peer3 = span!(Level::DEBUG, "conn", peer_addr = "8.8.8.8", port = 18230);
+        peer3.in_scope(|| {
+            std::thread::sleep(std::time::Duration::from_millis(300));
+            debug!(peer = "peer3", "connected");
+        });
+        drop(peer3);
+        let peer4 = span!(
+            Level::DEBUG,
+            "foomp",
+            normal_var = 43,
+            "{} <- format string",
+            42
+        );
+        peer4.in_scope(|| {
+            error!("hello");
+        });
+        drop(peer4);
+        let peer1 = span!(Level::DEBUG, "conn", peer_addr = "82.9.9.9", port = 42381);
+        peer1.in_scope(|| {
+            warn!(algo = "xor", "weak encryption requested");
+            std::thread::sleep(std::time::Duration::from_millis(300));
+            debug!(length = 8, "response sent");
+            debug!("disconnected");
+        });
+        drop(peer1);
+        let peer2 = span!(Level::DEBUG, "conn", peer_addr = "8.8.8.8", port = 18230);
+        peer2.in_scope(|| {
+            debug!(length = 5, "message received");
+            std::thread::sleep(std::time::Duration::from_millis(300));
+            debug!(length = 8, "response sent");
+            debug!("disconnected");
+        });
+        drop(peer2);
     });
 
-    drop(peer1);
-    let peer2 = span!(Level::DEBUG, "conn", peer_addr = "82.9.9.9", port = 61548);
-
-    // This span will not be printed at all since no event in it will pass the filter
-    peer2.in_scope(|| {
-        trace!(peer = "peer2", "connected");
-        std::thread::sleep(std::time::Duration::from_millis(300));
-        trace!(length = 2, "message received");
-    });
-    drop(peer2);
-    let peer3 = span!(Level::DEBUG, "conn", peer_addr = "8.8.8.8", port = 18230);
-    peer3.in_scope(|| {
-        std::thread::sleep(std::time::Duration::from_millis(300));
-        debug!(peer = "peer3", "connected");
-    });
-    drop(peer3);
-    let peer4 = span!(
-        Level::DEBUG,
-        "foomp",
-        normal_var = 43,
-        "{} <- format string",
-        42
-    );
-    peer4.in_scope(|| {
-        error!("hello");
-    });
-    drop(peer4);
-    let peer1 = span!(Level::DEBUG, "conn", peer_addr = "82.9.9.9", port = 42381);
-    peer1.in_scope(|| {
-        warn!(algo = "xor", "weak encryption requested");
-        std::thread::sleep(std::time::Duration::from_millis(300));
-        debug!(length = 8, "response sent");
-        debug!("disconnected");
-    });
-    drop(peer1);
-    let peer2 = span!(Level::DEBUG, "conn", peer_addr = "8.8.8.8", port = 18230);
-    peer2.in_scope(|| {
-        debug!(length = 5, "message received");
-        std::thread::sleep(std::time::Duration::from_millis(300));
-        debug!(length = 8, "response sent");
-        debug!("disconnected");
-    });
-    drop(peer2);
     warn!("internal error");
     log::error!("this is a log message");
     info!("exit");

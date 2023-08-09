@@ -341,12 +341,7 @@ fn indent_block_with_lines(
                     SpanMode::Open { .. } => buf.push_str(LINE_OPEN),
                     SpanMode::Retrace { .. } => buf.push_str(LINE_OPEN),
                     SpanMode::Close { .. } => buf.push_str(LINE_CLOSE),
-                    SpanMode::PreOpen | SpanMode::PostClose => {
-                        unreachable!(
-                            "indent_amount: {} {}, style: {:?}",
-                            indent_amount, indent, style
-                        )
-                    }
+                    SpanMode::PreOpen | SpanMode::PostClose => {}
                     SpanMode::Event => {}
                 }
             }
@@ -482,7 +477,8 @@ fn indent_block(
     let indent_spaces = indent * indent_amount;
     buf.reserve(block.len() + (lines.len() * indent_spaces));
 
-    // The PreOpen and PostClose events are generated for the indent of the child span
+    // The PreOpen and PostClose need to match up with the indent of the entered child span one more indent
+    // deep
     if matches!(style, SpanMode::PreOpen | SpanMode::PostClose) {
         indent += 1;
     }

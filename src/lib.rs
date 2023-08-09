@@ -7,16 +7,11 @@ use format::{write_span_mode, Buffers, ColorLevel, Config, FmtEvent, SpanMode};
 use is_terminal::IsTerminal;
 use nu_ansi_term::{Color, Style};
 use std::{
-    any::Any,
     fmt::{self, Write as _},
-    hint::spin_loop,
     io,
     iter::Fuse,
     mem,
-    sync::{
-        atomic::{AtomicU64, Ordering},
-        Mutex,
-    },
+    sync::Mutex,
     time::Instant,
 };
 use tracing_core::{
@@ -29,7 +24,7 @@ use tracing_log::NormalizeEvent;
 use tracing_subscriber::{
     fmt::MakeWriter,
     layer::{Context, Layer},
-    registry::{self, LookupSpan, ScopeFromRoot, SpanRef},
+    registry::{LookupSpan, ScopeFromRoot, SpanRef},
 };
 
 // Span extension data
@@ -40,11 +35,11 @@ pub(crate) struct Data {
 }
 
 impl Data {
-    pub fn new(attrs: &Attributes<'_>, printed: bool) -> Self {
+    pub fn new(attrs: &Attributes<'_>, written: bool) -> Self {
         let mut span = Self {
             start: Instant::now(),
             kvs: Vec::new(),
-            written: printed,
+            written,
         };
         attrs.record(&mut span);
         span
@@ -274,82 +269,65 @@ where
     ) where
         S: Subscriber + for<'new_span> LookupSpan<'new_span>,
     {
-        {
-            // let was_written = if let Some(data) = new_span.extensions_mut().get_mut::<Data>() {
-            //     let written = data.written;
-            //     data.written = true;
-            //     written
-            // } else {
-            //     eprintln!("Span not written");
-            //     false
-            // };
-
-            let should_write = if self.config.deferred_spans {
-                if let Some(data) = new_span.extensions_mut().get_mut::<Data>() {
-                    !data.written
-                } else {
-                    false
-                }
+        let should_write = if self.config.deferred_spans {
+            if let Some(data) = new_span.extensions_mut().get_mut::<Data>() {
+                !data.written
             } else {
+                false
+            }
+        } else {
+            false
+        };
+
+        if self.config.span_retrace || should_write {
+            let was_written = if let Some(data) = new_span.extensions_mut().get_mut::<Data>() {
+                mem::replace(&mut data.written, true)
+            } else {
+                // `on_new_span` was not called, before
+                // Consider if this should panic instead, which is *technically* correct but is
+                // bad behavior for a logging layer in production.
                 false
             };
 
-            if self.config.span_retrace || should_write {
-                let was_written = if let Some(data) = new_span.extensions_mut().get_mut::<Data>() {
-                    mem::replace(&mut data.written, true)
-                } else {
-                    // `on_new_span` was not called, before
-                    // Consider if this should panic instead, which is *technically* correct but is
-                    // bad behavior for a logging layer in production.
-                    false
-                };
+            let old_span_id = bufs.current_span.replace((new_span.id()).clone());
+            let old_span_id = old_span_id.as_ref();
 
-                let old_span_id = bufs.current_span.replace((new_span.id()).clone());
-                let old_span_id = old_span_id.as_ref();
+            if Some(&new_span.id()) != old_span_id {
+                let old_span = old_span_id.as_ref().and_then(|v| ctx.span(v));
 
-                if Some(&new_span.id()) != old_span_id {
-                    let old_span = old_span_id.as_ref().and_then(|v| ctx.span(v));
-
-                    // Print the previous span before entering a new deferred or retraced span
-                    if self.config.verbose_entry {
-                        if let Some(old_span) = &old_span {
-                            self.write_span_info(old_span, bufs, ctx, SpanMode::PreOpen);
-                        }
+                // Print the previous span before entering a new deferred or retraced span
+                if self.config.verbose_entry {
+                    if let Some(old_span) = &old_span {
+                        self.write_span_info(old_span, bufs, SpanMode::PreOpen);
                     }
+                }
 
-                    let old_path = old_span.as_ref().map(scope_path).into_iter().flatten();
+                let old_path = old_span.as_ref().map(scope_path).into_iter().flatten();
 
-                    let new_path = scope_path(new_span);
+                let new_path = scope_path(new_span);
 
-                    // Print the path from the common base of the two spans
-                    let new_path = DifferenceIter::new(old_path, new_path, |v| v.id());
+                // Print the path from the common base of the two spans
+                let new_path = DifferenceIter::new(old_path, new_path, |v| v.id());
 
-                    for span in new_path {
-                        self.write_span_info(
-                            &span,
-                            bufs,
-                            ctx,
-                            if was_written {
-                                SpanMode::Retrace
-                            } else {
-                                SpanMode::Open {
-                                    verbose: self.config.verbose_entry,
-                                }
-                            },
-                        )
-                    }
+                for span in new_path {
+                    self.write_span_info(
+                        &span,
+                        bufs,
+                        if was_written {
+                            SpanMode::Retrace
+                        } else {
+                            SpanMode::Open {
+                                verbose: self.config.verbose_entry,
+                            }
+                        },
+                    )
                 }
             }
         }
     }
 
-    fn write_span_info<S>(
-        &self,
-        span: &SpanRef<S>,
-        bufs: &mut Buffers,
-        ctx: &Context<S>,
-        style: SpanMode,
-    ) where
+    fn write_span_info<S>(&self, span: &SpanRef<S>, bufs: &mut Buffers, style: SpanMode)
+    where
         S: Subscriber + for<'span> LookupSpan<'span>,
     {
         let ext = span.extensions();
@@ -446,14 +424,13 @@ where
 
         if self.config.verbose_entry {
             if let Some(span) = span.parent() {
-                self.write_span_info(&span, bufs, &ctx, SpanMode::PreOpen);
+                self.write_span_info(&span, bufs, SpanMode::PreOpen);
             }
         }
 
         self.write_span_info(
             &span,
             bufs,
-            &ctx,
             SpanMode::Open {
                 verbose: self.config.verbose_entry,
             },
@@ -586,7 +563,6 @@ where
         self.write_span_info(
             &span,
             bufs,
-            &ctx,
             SpanMode::Close {
                 verbose: self.config.verbose_exit,
             },
@@ -597,7 +573,7 @@ where
                 // Consider parent as entered
                 bufs.current_span = Some(parent_span.id());
 
-                self.write_span_info(&parent_span, bufs, &ctx, SpanMode::PostClose);
+                self.write_span_info(&parent_span, bufs, SpanMode::PostClose);
             }
         }
     }

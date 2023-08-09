@@ -1,5 +1,6 @@
-use tracing::{debug, error, info, instrument, span, trace, warn, Level};
-use tracing_core::LevelFilter;
+use tracing::{
+    debug, error, info, instrument, level_filters::LevelFilter, span, trace, warn, Level,
+};
 use tracing_subscriber::{layer::SubscriberExt, registry::Registry, Layer};
 use tracing_tree::HierarchicalLayer;
 

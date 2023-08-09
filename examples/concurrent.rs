@@ -73,9 +73,17 @@ fn main() {
         std::thread::sleep(std::time::Duration::from_millis(300));
 
         let _ = countdown_b.poll_unpin(&mut cx);
+
+        peer1.in_scope(|| {
+            warn!("peer1 warning");
+        });
+
+        tracing::info!("finished polling countdowns");
     });
 
-    tracing::info!("finished countdowns");
+    drop(peer1);
+
+    tracing::info!("all done!");
 
     info!("exit")
 }

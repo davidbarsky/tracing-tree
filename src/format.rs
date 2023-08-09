@@ -25,9 +25,7 @@ pub(crate) enum SpanMode {
         verbose: bool,
     },
     /// A span has been entered but another *different* span has been entered in the meantime.
-    Retrace {
-        verbose: bool,
-    },
+    Retrace,
     PostClose,
     Event,
 }
@@ -311,8 +309,7 @@ pub(crate) fn write_span_mode(buf: &mut String, style: SpanMode) {
     match style {
         SpanMode::Open { verbose: true } => buf.push_str("open(v)"),
         SpanMode::Open { verbose: false } => buf.push_str("open"),
-        SpanMode::Retrace { verbose: true } => buf.push_str("retrace(v)"),
-        SpanMode::Retrace { verbose: false } => buf.push_str("retrace"),
+        SpanMode::Retrace => buf.push_str("retrace"),
         SpanMode::Close { verbose: true } => buf.push_str("close(v)"),
         SpanMode::Close { verbose: false } => buf.push_str("close"),
         SpanMode::PreOpen => buf.push_str("pre_open"),
@@ -342,7 +339,7 @@ fn indent_block_with_lines(
             if indent == 0 {
                 match style {
                     SpanMode::Open { .. } => buf.push_str(LINE_OPEN),
-                    SpanMode::Retrace { .. } => buf.push_str("*"),
+                    SpanMode::Retrace { .. } => buf.push_str(LINE_OPEN),
                     SpanMode::Close { .. } => buf.push_str(LINE_CLOSE),
                     SpanMode::PreOpen | SpanMode::PostClose => {
                         unreachable!(
@@ -383,7 +380,7 @@ fn indent_block_with_lines(
             }
             buf.push_str(LINE_OPEN);
         }
-        SpanMode::Open { verbose: false } | SpanMode::Retrace { verbose: false } => {
+        SpanMode::Open { verbose: false } | SpanMode::Retrace => {
             buf.push_str(LINE_BRANCH);
             for _ in 1..indent_amount {
                 buf.push_str(LINE_HORIZ);
@@ -408,13 +405,6 @@ fn indent_block_with_lines(
             } else {
                 buf.push_str(LINE_VERT);
             }
-        }
-        SpanMode::Retrace { verbose: true } => {
-            buf.push_str(LINE_BRANCH);
-            for _ in 1..indent_amount {
-                buf.push_str(LINE_HORIZ);
-            }
-            buf.push_str(LINE_OPEN);
         }
         SpanMode::Close { verbose: false } => {
             buf.push_str(LINE_BRANCH);

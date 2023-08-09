@@ -265,6 +265,84 @@ where
         Ok(())
     }
 
+    /// If `span_retrace` ensures that `new_span` is properly printed before an event
+    fn write_retrace_span<'a, S>(
+        &self,
+        new_span: &SpanRef<'a, S>,
+        bufs: &mut Buffers,
+        ctx: &'a Context<S>,
+    ) where
+        S: Subscriber + for<'new_span> LookupSpan<'new_span>,
+    {
+        {
+            // let was_written = if let Some(data) = new_span.extensions_mut().get_mut::<Data>() {
+            //     let written = data.written;
+            //     data.written = true;
+            //     written
+            // } else {
+            //     eprintln!("Span not written");
+            //     false
+            // };
+
+            let should_write = if self.config.deferred_spans {
+                if let Some(data) = new_span.extensions_mut().get_mut::<Data>() {
+                    !data.written
+                } else {
+                    false
+                }
+            } else {
+                false
+            };
+
+            if self.config.span_retrace || should_write {
+                let was_written = if let Some(data) = new_span.extensions_mut().get_mut::<Data>() {
+                    mem::replace(&mut data.written, true)
+                } else {
+                    // `on_new_span` was not called, before
+                    // Consider if this should panic instead, which is *technically* correct but is
+                    // bad behavior for a logging layer in production.
+                    false
+                };
+
+                let old_span_id = bufs.current_span.replace((new_span.id()).clone());
+                let old_span_id = old_span_id.as_ref();
+
+                if Some(&new_span.id()) != old_span_id {
+                    let old_span = old_span_id.as_ref().and_then(|v| ctx.span(v));
+
+                    // Print the previous span before entering a new deferred or retraced span
+                    if self.config.verbose_entry {
+                        if let Some(old_span) = &old_span {
+                            self.write_span_info(old_span, bufs, ctx, SpanMode::PreOpen);
+                        }
+                    }
+
+                    let old_path = old_span.as_ref().map(scope_path).into_iter().flatten();
+
+                    let new_path = scope_path(new_span);
+
+                    // Print the path from the common base of the two spans
+                    let new_path = DifferenceIter::new(old_path, new_path, |v| v.id());
+
+                    for span in new_path {
+                        self.write_span_info(
+                            &span,
+                            bufs,
+                            ctx,
+                            if was_written {
+                                SpanMode::Retrace
+                            } else {
+                                SpanMode::Open {
+                                    verbose: self.config.verbose_entry,
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     fn write_span_info<S>(
         &self,
         span: &SpanRef<S>,
@@ -274,10 +352,6 @@ where
     ) where
         S: Subscriber + for<'span> LookupSpan<'span>,
     {
-        // let span = ctx
-        //     .span(id)
-        //     .expect("in on_enter/on_exit but span does not exist");
-
         let ext = span.extensions();
         let data = ext.get::<Data>().expect("span does not have data");
 
@@ -294,7 +368,8 @@ where
             // Print the parent of a new span again before entering the child
             SpanMode::PreOpen if self.config.verbose_entry => true,
             SpanMode::Close { verbose } => verbose,
-            SpanMode::Retrace { verbose } => verbose,
+            // Generated if `span_retrace` is enabled
+            SpanMode::Retrace => true,
             // Generated if `verbose_exit` is enabled
             SpanMode::PostClose => true,
             _ => false,
@@ -388,51 +463,13 @@ where
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
         let span = ctx.current_span();
         let span_id = span.id();
-        let span = span_id.and_then(|id| ctx.span(id).map(|span| (id, span)));
+        let span = span_id.and_then(|id| ctx.span(id));
 
         let mut guard = self.bufs.lock().unwrap();
         let bufs = &mut *guard;
 
-        if let Some((span_id, current_span)) = &span {
-            if self.config.span_retrace
-                || current_span
-                    .extensions()
-                    .get::<Data>()
-                    .is_some_and(|v| !v.written)
-            {
-                if let Some(data) = current_span.extensions_mut().get_mut::<Data>() {
-                    data.written = true;
-                }
-
-                let old_span_id = bufs.current_span.replace((*span_id).clone());
-
-                if Some(*span_id) != old_span_id.as_ref() {
-                    let old_span = old_span_id.as_ref().and_then(|v| ctx.span(v));
-
-                    // eprintln!(
-                    //     "concurrent old: {:?}, new: {:?}",
-                    //     old_span.as_ref().map(|v| v.metadata().name()),
-                    //     current_span.metadata().name()
-                    // );
-
-                    let old_path = old_span.as_ref().map(scope_path).into_iter().flatten();
-                    let new_path = scope_path(current_span);
-
-                    // Print the path from the common base of the two spans
-                    let new_path = DifferenceIter::new(old_path, new_path, |v| v.id());
-
-                    for span in new_path {
-                        self.write_span_info(
-                            &span,
-                            bufs,
-                            &ctx,
-                            SpanMode::Retrace {
-                                verbose: self.config.span_retrace,
-                            },
-                        )
-                    }
-                }
-            }
+        if let Some(new_span) = &span {
+            self.write_retrace_span(new_span, bufs, &ctx);
         }
 
         let mut event_buf = &mut bufs.current_buf;
@@ -461,7 +498,7 @@ where
         // check if this event occurred in the context of a span.
         // if it has, get the start time of this span.
         let start = match span {
-            Some((id, span)) => {
+            Some(span) => {
                 // if the event is in a span, get the span's starting point.
                 let ext = span.extensions();
                 let data = ext
@@ -534,7 +571,7 @@ where
 
         // Store the most recently entered span
         if bufs.current_span.as_ref() == Some(&id) {
-            bufs.current_span = None;
+            // bufs.current_span = None;
         }
 
         let span = ctx.span(&id).expect("invalid span in on_close");
@@ -543,6 +580,8 @@ where
         if self.config.deferred_spans
             && span.extensions().get::<Data>().map(|v| v.written) != Some(true)
         {}
+
+        self.write_retrace_span(&span, bufs, &ctx);
 
         self.write_span_info(
             &span,

@@ -28,7 +28,7 @@ fn main() {
 
     let server_span = span!(Level::DEBUG, "server", host = "localhost", port = 8080);
 
-    println!("This prints before the span open message");
+    println!("-> This prints before the span open message");
 
     let _e2 = server_span.enter();
     info!("starting");
@@ -40,7 +40,7 @@ fn main() {
 
     info!("listening");
     // Defer two levels of spans
-    println!("Deferring two levels of spans");
+    println!("-> Deferring two levels of spans");
     span!(Level::INFO, "connections").in_scope(|| {
         let peer1 = span!(Level::DEBUG, "conn", peer_addr = "82.9.9.9", port = 42381);
         peer1.in_scope(|| {

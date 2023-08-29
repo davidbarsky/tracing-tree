@@ -454,21 +454,18 @@ where
     }
 
     fn format_timestamp_with_decimals(&self, start: std::time::Instant) -> String {
-        let elapsed = start.elapsed();
-        let nanos = elapsed.as_nanos() as f64;
-        let micros = elapsed.as_micros() as f64;
-        let millis = elapsed.as_millis() as f64;
+        let secs = start.elapsed().as_secs_f64();
 
         // Convert elapsed time to appropriate units: μs, ms, or s.
         // - Less than 1ms: use μs
         // - Less than 1s : use ms
         // - 1s and above : use s
-        let (n, unit) = if micros < 1000.0 {
-            (nanos / 1000.0, "μs")
-        } else if millis < 1000.0 {
-            (micros / 1000.0, "ms")
+        let (n, unit) = if secs < 0.001 {
+            (secs * 1_000_000.0, "μs")
+        } else if secs < 1.0 {
+            (secs * 1_000.0, "ms")
         } else {
-            (millis / 1000.0, "s ")
+            (secs, "s ")
         }; 
 
         let n = format!(" {n:.2}");

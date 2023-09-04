@@ -406,10 +406,10 @@ where
         bufs.flush_current_buf(writer)
     }
 
-    fn get_timestamp<S>(&self, id: &Id ,ctx: &Context<S>,) -> Option<String>
+    fn get_timestamp<S>(&self, id: &Id, ctx: &Context<S>) -> Option<String>
     where
         S: Subscriber + for<'span> LookupSpan<'span>,
-    { 
+    {
         match ctx.span(id) {
             // if the event is in a span, get the span's starting point.
             Some(ctx) => {
@@ -466,7 +466,7 @@ where
             (secs * 1_000.0, "ms")
         } else {
             (secs, "s ")
-        }; 
+        };
 
         let n = format!(" {n:.2}");
         format!(

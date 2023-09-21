@@ -5,7 +5,7 @@ use std::{
 };
 use tracing_core::{
     field::{Field, Visit},
-    Level,
+    span, Level,
 };
 
 pub(crate) const LINE_VERT: &str = "│";
@@ -14,11 +14,20 @@ pub(crate) const LINE_BRANCH: &str = "├";
 pub(crate) const LINE_CLOSE: &str = "┘";
 pub(crate) const LINE_OPEN: &str = "┐";
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub(crate) enum SpanMode {
+    /// Executed on the parent before entering a child span
     PreOpen,
-    Open { verbose: bool },
-    Close { verbose: bool },
+    Open {
+        verbose: bool,
+    },
+    Close {
+        verbose: bool,
+    },
+    /// A span has been entered but another *different* span has been entered in the meantime.
+    Retrace {
+        verbose: bool,
+    },
     PostClose,
     Event,
 }
@@ -43,8 +52,14 @@ pub struct Config {
     pub verbose_entry: bool,
     /// Whether to print the current span before exiting it.
     pub verbose_exit: bool,
+    /// Print the path leading up to a span if a different span was entered concurrently
+    pub span_retrace: bool,
     /// Whether to print squiggly brackets (`{}`) around the list of fields in a span.
     pub bracketed_fields: bool,
+    /// Defer printing a span until an event is generated inside of it
+    pub deferred_spans: bool,
+    /// Print a label of the span mode (open/close etc).
+    pub span_modes: bool,
 }
 
 impl Config {
@@ -95,6 +110,27 @@ impl Config {
         }
     }
 
+    pub fn with_span_retrace(self, enabled: bool) -> Self {
+        Self {
+            span_retrace: enabled,
+            ..self
+        }
+    }
+
+    pub fn with_deferred_spans(self, enable: bool) -> Self {
+        Self {
+            deferred_spans: enable,
+            ..self
+        }
+    }
+
+    pub fn with_span_modes(self, enable: bool) -> Self {
+        Self {
+            span_modes: enable,
+            ..self
+        }
+    }
+
     pub fn with_bracketed_fields(self, bracketed_fields: bool) -> Self {
         Self {
             bracketed_fields,
@@ -137,7 +173,10 @@ impl Default for Config {
             wraparound: usize::max_value(),
             verbose_entry: false,
             verbose_exit: false,
+            span_retrace: false,
             bracketed_fields: false,
+            deferred_spans: false,
+            span_modes: false,
         }
     }
 }
@@ -146,6 +185,13 @@ impl Default for Config {
 pub struct Buffers {
     pub current_buf: String,
     pub indent_buf: String,
+
+    /// The last seen span of this layer
+    ///
+    /// This serves to serialize spans as two events can be generated in different spans
+    /// without the spans entering and exiting beforehand. This happens for multithreaded code
+    /// and instrumented futures
+    pub current_span: Option<span::Id>,
 }
 
 impl Buffers {
@@ -153,6 +199,7 @@ impl Buffers {
         Self {
             current_buf: String::new(),
             indent_buf: String::new(),
+            current_span: None,
         }
     }
 
@@ -197,13 +244,14 @@ impl Buffers {
             &prefix,
             style,
         );
+
         self.current_buf.clear();
         self.flush_indent_buf();
 
         // Render something when wraparound occurs so the user is aware of it
         if config.indent_lines {
             match style {
-                SpanMode::PreOpen | SpanMode::Open { .. } => {
+                SpanMode::PreOpen { .. } | SpanMode::Open { .. } => {
                     if indent > 0 && (indent + 1) % config.wraparound == 0 {
                         self.current_buf.push_str(&prefix);
                         for _ in 0..(indent % config.wraparound * config.indent_amount) {
@@ -259,15 +307,33 @@ impl<'a> fmt::Display for ColorLevel<'a> {
     }
 }
 
+pub(crate) fn write_span_mode(buf: &mut String, style: SpanMode) {
+    match style {
+        SpanMode::Open { verbose: true } => buf.push_str("open(v)"),
+        SpanMode::Open { verbose: false } => buf.push_str("open"),
+        SpanMode::Retrace { verbose: false } => buf.push_str("retrace"),
+        SpanMode::Retrace { verbose: true } => buf.push_str("retrace(v)"),
+        SpanMode::Close { verbose: true } => buf.push_str("close(v)"),
+        SpanMode::Close { verbose: false } => buf.push_str("close"),
+        SpanMode::PreOpen => buf.push_str("pre_open"),
+        SpanMode::PostClose => buf.push_str("post_close"),
+        SpanMode::Event => buf.push_str("event"),
+    }
+
+    buf.push_str(": ")
+}
+
 fn indent_block_with_lines(
     lines: &[&str],
     buf: &mut String,
     indent: usize,
+    // width of one level of indent
     indent_amount: usize,
     prefix: &str,
     style: SpanMode,
 ) {
     let indent_spaces = indent * indent_amount;
+
     if lines.is_empty() {
         return;
     } else if indent_spaces == 0 {
@@ -277,8 +343,9 @@ fn indent_block_with_lines(
             if indent == 0 {
                 match style {
                     SpanMode::Open { .. } => buf.push_str(LINE_OPEN),
+                    SpanMode::Retrace { .. } => buf.push_str(LINE_OPEN),
                     SpanMode::Close { .. } => buf.push_str(LINE_CLOSE),
-                    SpanMode::PreOpen | SpanMode::PostClose => {}
+                    SpanMode::PreOpen { .. } | SpanMode::PostClose => {}
                     SpanMode::Event => {}
                 }
             }
@@ -287,6 +354,7 @@ fn indent_block_with_lines(
         }
         return;
     }
+
     let mut s = String::with_capacity(indent_spaces + prefix.len());
     s.push_str(prefix);
 
@@ -311,14 +379,14 @@ fn indent_block_with_lines(
             }
             buf.push_str(LINE_OPEN);
         }
-        SpanMode::Open { verbose: false } => {
+        SpanMode::Open { verbose: false } | SpanMode::Retrace { verbose: false } => {
             buf.push_str(LINE_BRANCH);
             for _ in 1..indent_amount {
                 buf.push_str(LINE_HORIZ);
             }
             buf.push_str(LINE_OPEN);
         }
-        SpanMode::Open { verbose: true } => {
+        SpanMode::Open { verbose: true } | SpanMode::Retrace { verbose: true } => {
             buf.push_str(LINE_VERT);
             for _ in 1..(indent_amount / 2) {
                 buf.push(' ');
@@ -403,7 +471,7 @@ fn indent_block_with_lines(
 fn indent_block(
     block: &mut String,
     buf: &mut String,
-    indent: usize,
+    mut indent: usize,
     indent_amount: usize,
     indent_lines: bool,
     prefix: &str,
@@ -412,6 +480,16 @@ fn indent_block(
     let lines: Vec<&str> = block.lines().collect();
     let indent_spaces = indent * indent_amount;
     buf.reserve(block.len() + (lines.len() * indent_spaces));
+
+    // The PreOpen and PostClose need to match up with the indent of the entered child span one more indent
+    // deep
+    match style {
+        SpanMode::PreOpen | SpanMode::PostClose => {
+            indent += 1;
+        }
+        _ => (),
+    }
+
     if indent_lines {
         indent_block_with_lines(&lines, buf, indent, indent_amount, prefix, style);
     } else {

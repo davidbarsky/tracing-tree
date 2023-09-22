@@ -406,12 +406,11 @@ where
         bufs.flush_current_buf(writer)
     }
 
-    fn get_timestamp<S>(&self, id: &Id, ctx: &Context<S>) -> Option<String>
+    fn get_timestamp<S>(&self, span: SpanRef<S>) -> Option<String>
     where
         S: Subscriber + for<'span> LookupSpan<'span>,
     {
-        let ctx = ctx.span(id)?;
-        let ext = ctx.extensions();
+        let ext = span.extensions();
         let data = ext
             .get::<Data>()
             .expect("Data cannot be found in extensions");
@@ -548,8 +547,8 @@ where
 
         // check if this event occurred in the context of a span.
         // if it has, get the start time of this span.
-        if let Some(id) = ctx.current_span().id() {
-            if let Some(timestamp) = self.get_timestamp(id, &ctx) {
+        if let Some(span) = span {
+            if let Some(timestamp) = self.get_timestamp(span) {
                 write!(&mut event_buf, "{}", timestamp).expect("Unable to write to buffer");
             }
         }

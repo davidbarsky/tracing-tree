@@ -440,12 +440,8 @@ where
             (secs / 60, "m ")
         };
 
-        let n = format!("{n:>3}");
-        format!(
-            "{timestamp}{unit} ",
-            timestamp = self.styled(Style::new().dimmed(), n),
-            unit = self.styled(Style::new().dimmed(), unit),
-        )
+        let timestamp = format!("{n:>3}");
+        self.style_timestamp(timestamp, unit)
     }
 
     fn format_timestamp_with_decimals(&self, start: std::time::Instant) -> String {
@@ -463,10 +459,14 @@ where
             (secs, "s ")
         };
 
-        let n = format!(" {n:.2}");
+        let timestamp = format!(" {n:.2}");
+        self.style_timestamp(timestamp, unit)
+    }
+
+    fn style_timestamp(&self, timestamp: String, unit: &str) -> String {
         format!(
             "{timestamp}{unit} ",
-            timestamp = self.styled(Style::new().dimmed(), n),
+            timestamp = self.styled(Style::new().dimmed(), timestamp),
             unit = self.styled(Style::new().dimmed(), unit),
         )
     }

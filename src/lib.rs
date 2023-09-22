@@ -410,21 +410,16 @@ where
     where
         S: Subscriber + for<'span> LookupSpan<'span>,
     {
-        match ctx.span(id) {
-            // if the event is in a span, get the span's starting point.
-            Some(ctx) => {
-                let ext = ctx.extensions();
-                let data = ext
-                    .get::<Data>()
-                    .expect("Data cannot be found in extensions");
+        let ctx = ctx.span(id)?;
+        let ext = ctx.extensions();
+        let data = ext
+            .get::<Data>()
+            .expect("Data cannot be found in extensions");
 
-                if self.config.higher_precision {
-                    Some(self.format_timestamp_with_decimals(data.start))
-                } else {
-                    Some(self.format_timestamp(data.start))
-                }
-            }
-            None => None,
+        if self.config.higher_precision {
+            Some(self.format_timestamp_with_decimals(data.start))
+        } else {
+            Some(self.format_timestamp(data.start))
         }
     }
 

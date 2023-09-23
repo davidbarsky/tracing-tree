@@ -4,11 +4,10 @@ pub mod time;
 use crate::time::FormatTime;
 use format::{write_span_mode, Buffers, ColorLevel, Config, FmtEvent, SpanMode};
 
-use is_terminal::IsTerminal;
 use nu_ansi_term::{Color, Style};
 use std::{
     fmt::{self, Write as _},
-    io,
+    io::{self, IsTerminal},
     iter::Fuse,
     mem,
     sync::Mutex,

@@ -233,6 +233,14 @@ where
         }
     }
 
+    /// Whether to print the time with higher precision.
+    pub fn with_higher_precision(self, higher_precision: bool) -> Self {
+        Self {
+            config: self.config.with_higher_precision(higher_precision),
+            ..self
+        }
+    }
+
     fn styled(&self, style: Style, text: impl AsRef<str>) -> String {
         if self.config.ansi {
             style.paint(text.as_ref()).to_string()
@@ -397,6 +405,70 @@ where
         let writer = self.make_writer.make_writer();
         bufs.flush_current_buf(writer)
     }
+
+    fn get_timestamp<S>(&self, span: SpanRef<S>) -> Option<String>
+    where
+        S: Subscriber + for<'span> LookupSpan<'span>,
+    {
+        let ext = span.extensions();
+        let data = ext
+            .get::<Data>()
+            .expect("Data cannot be found in extensions");
+
+        if self.config.higher_precision {
+            Some(self.format_timestamp_with_decimals(data.start))
+        } else {
+            Some(self.format_timestamp(data.start))
+        }
+    }
+
+    fn format_timestamp(&self, start: std::time::Instant) -> String {
+        let elapsed = start.elapsed();
+        let millis = elapsed.as_millis();
+        let secs = elapsed.as_secs();
+
+        // Convert elapsed time to appropriate units: ms, s, or m.
+        // - Less than 1s : use ms
+        // - Less than 1m : use s
+        // - 1m and above : use m
+        let (n, unit) = if millis < 1000 {
+            (millis as _, "ms")
+        } else if secs < 60 {
+            (secs, "s ")
+        } else {
+            (secs / 60, "m ")
+        };
+
+        let timestamp = format!("{n:>3}");
+        self.style_timestamp(timestamp, unit)
+    }
+
+    fn format_timestamp_with_decimals(&self, start: std::time::Instant) -> String {
+        let secs = start.elapsed().as_secs_f64();
+
+        // Convert elapsed time to appropriate units: μs, ms, or s.
+        // - Less than 1ms: use μs
+        // - Less than 1s : use ms
+        // - 1s and above : use s
+        let (n, unit) = if secs < 0.001 {
+            (secs * 1_000_000.0, "μs")
+        } else if secs < 1.0 {
+            (secs * 1_000.0, "ms")
+        } else {
+            (secs, "s ")
+        };
+
+        let timestamp = format!(" {n:.2}");
+        self.style_timestamp(timestamp, unit)
+    }
+
+    fn style_timestamp(&self, timestamp: String, unit: &str) -> String {
+        format!(
+            "{timestamp}{unit} ",
+            timestamp = self.styled(Style::new().dimmed(), timestamp),
+            unit = self.styled(Style::new().dimmed(), unit),
+        )
+    }
 }
 
 impl<S, W, FT> Layer<S> for HierarchicalLayer<W, FT>
@@ -475,38 +547,10 @@ where
 
         // check if this event occurred in the context of a span.
         // if it has, get the start time of this span.
-        let start = match span {
-            Some(span) => {
-                // if the event is in a span, get the span's starting point.
-                let ext = span.extensions();
-                let data = ext
-                    .get::<Data>()
-                    .expect("Data cannot be found in extensions");
-
-                Some(data.start)
+        if let Some(span) = span {
+            if let Some(timestamp) = self.get_timestamp(span) {
+                write!(&mut event_buf, "{}", timestamp).expect("Unable to write to buffer");
             }
-            None => None,
-        };
-
-        if let Some(start) = start {
-            let elapsed = start.elapsed();
-            let millis = elapsed.as_millis();
-            let secs = elapsed.as_secs();
-            let (n, unit) = if millis < 1000 {
-                (millis as _, "ms")
-            } else if secs < 60 {
-                (secs, "s ")
-            } else {
-                (secs / 60, "m ")
-            };
-            let n = format!("{n:>3}");
-            write!(
-                &mut event_buf,
-                "{timestamp}{unit} ",
-                timestamp = self.styled(Style::new().dimmed(), n),
-                unit = self.styled(Style::new().dimmed(), unit),
-            )
-            .expect("Unable to write to buffer");
         }
 
         #[cfg(feature = "tracing-log")]

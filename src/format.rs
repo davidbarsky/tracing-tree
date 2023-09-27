@@ -60,6 +60,8 @@ pub struct Config {
     pub deferred_spans: bool,
     /// Print a label of the span mode (open/close etc).
     pub span_modes: bool,
+    /// Whether to print the time with higher precision.
+    pub higher_precision: bool,
 }
 
 impl Config {
@@ -138,6 +140,13 @@ impl Config {
         }
     }
 
+    pub fn with_higher_precision(self, higher_precision: bool) -> Self {
+        Self {
+            higher_precision,
+            ..self
+        }
+    }
+
     pub(crate) fn prefix(&self) -> String {
         let mut buf = String::new();
         if self.render_thread_ids {
@@ -177,6 +186,7 @@ impl Default for Config {
             bracketed_fields: false,
             deferred_spans: false,
             span_modes: false,
+            higher_precision: false,
         }
     }
 }

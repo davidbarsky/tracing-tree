@@ -538,10 +538,11 @@ where
             }
         }
 
+        let deindent = if self.config.indent_lines { 0 } else { 1 };
         // printing the indentation
         let indent = ctx
             .event_scope(event)
-            .map(|scope| scope.count())
+            .map(|scope| scope.count() - deindent)
             .unwrap_or(0);
 
         // check if this event occurred in the context of a span.

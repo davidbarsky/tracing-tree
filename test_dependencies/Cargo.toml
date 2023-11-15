@@ -14,4 +14,4 @@ tracing-subscriber = { version = "0.3", default-features = false, features = [
     "std",
 ] }
 tracing-tree = { path = ".." }
-tracing-log = "0.1"
+tracing-log = "0.2"

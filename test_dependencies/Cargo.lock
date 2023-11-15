@@ -280,7 +280,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-tree"
-version = "0.2.5"
+version = "0.3.0"
 dependencies = [
  "nu-ansi-term",
  "tracing-core",

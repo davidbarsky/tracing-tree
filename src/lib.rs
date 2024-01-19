@@ -6,7 +6,7 @@ use format::{write_span_mode, Buffers, ColorLevel, Config, FmtEvent, SpanMode};
 
 use nu_ansi_term::{Color, Style};
 use std::{
-    fmt::{self, Write as _},
+    fmt::{self, Write},
     io::{self, IsTerminal},
     iter::Fuse,
     mem,
@@ -273,6 +273,7 @@ where
         new_span: &SpanRef<'a, S>,
         bufs: &mut Buffers,
         ctx: &'a Context<S>,
+        pre_open: bool,
     ) where
         S: Subscriber + for<'new_span> LookupSpan<'new_span>,
     {
@@ -306,13 +307,13 @@ where
                     false
                 };
 
-                // Print the previous span before entering a new deferred or retraced span
-                if i == 0 && self.config.verbose_entry {
-                    if let Some(parent) = &span.parent() {
-                        self.write_span_info(parent, bufs, SpanMode::PreOpen);
+                let verbose = i == 1 && pre_open && span.id() == new_span_id;
+                // Print the parent of the new span if `pre_open==true`
+                if verbose {
+                    if let Some(span) = span.parent() {
+                        self.write_span_info(&span, bufs, SpanMode::PreOpen);
                     }
                 }
-                let verbose = self.config.verbose_entry && i == 0;
 
                 self.write_span_info(
                     &span,
@@ -324,7 +325,6 @@ where
                     },
                 )
             }
-            // }
         }
     }
 
@@ -485,15 +485,14 @@ where
 
         let bufs = &mut *self.bufs.lock().unwrap();
 
-        if self.config.verbose_entry {
-            if let Some(span) = span.parent() {
-                self.write_span_info(&span, bufs, SpanMode::PreOpen);
-            }
-        }
-
         if self.config.span_retrace {
-            self.write_retrace_span(&span, bufs, &ctx);
+            self.write_retrace_span(&span, bufs, &ctx, self.config.verbose_entry);
         } else {
+            if self.config.verbose_entry {
+                if let Some(span) = span.parent() {
+                    self.write_span_info(&span, bufs, SpanMode::PreOpen);
+                }
+            }
             // Store the most recently entered span
             bufs.current_span = Some(span.id());
             self.write_span_info(
@@ -516,7 +515,7 @@ where
 
         if let Some(new_span) = &span {
             if self.config.span_retrace || self.config.deferred_spans {
-                self.write_retrace_span(new_span, bufs, &ctx);
+                self.write_retrace_span(new_span, bufs, &ctx, self.config.verbose_entry);
             }
         }
 

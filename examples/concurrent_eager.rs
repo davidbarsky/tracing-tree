@@ -18,6 +18,7 @@ fn main() {
         .with_thread_ids(true)
         .with_span_retrace(true)
         .with_deferred_spans(false)
+        .with_verbose_entry(true)
         .with_targets(true);
 
     let subscriber = Registry::default().with(layer);

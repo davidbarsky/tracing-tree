@@ -1,19 +1,15 @@
 1:main┐concurrent_eager::spawn_fut key="a"
 1:main┐concurrent_eager::spawn_fut key="b"
 1:main┐concurrent_eager::spawn_fut key="a"
-1:main├─┐concurrent_eager::spawn_fut key="a"
-1:main│ └─┐concurrent_eager::a 
+1:main├───┐concurrent_eager::a 
 1:main┐concurrent_eager::spawn_fut key="b"
-1:main├─┐concurrent_eager::spawn_fut key="b"
-1:main│ └─┐concurrent_eager::b 
+1:main├───┐concurrent_eager::b 
 1:main┐concurrent_eager::spawn_fut key="a"
-1:main├─┐concurrent_eager::spawn_fut key="a"
-1:main│ └─┐concurrent_eager::a 
+1:main├───┐concurrent_eager::a 
 1:main│   ├───  Xms INFO concurrent_eager a
 1:main├───┘
 1:main┐concurrent_eager::spawn_fut key="b"
-1:main├─┐concurrent_eager::spawn_fut key="b"
-1:main│ └─┐concurrent_eager::b 
+1:main├───┐concurrent_eager::b 
 1:main│   ├───  Xms INFO concurrent_eager b
 1:main├───┘
 1:main┘

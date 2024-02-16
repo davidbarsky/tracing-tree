@@ -307,10 +307,11 @@ where
                     false
                 };
 
-                let verbose = i == 1 && pre_open && span.id() == new_span_id;
-                // Print the parent of the new span if `pre_open==true`
-                if verbose {
+                // Print the parent of the first span
+                let mut verbose = false;
+                if i == 0 && pre_open {
                     if let Some(span) = span.parent() {
+                        verbose = true;
                         self.write_span_info(&span, bufs, SpanMode::PreOpen);
                     }
                 }

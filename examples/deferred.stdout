@@ -1,5 +1,5 @@
 -> This prints before the span open message
-1:main┐open(v): deferred::hierarchical-example version=0.1
+1:main┐open: deferred::hierarchical-example version=0.1
 1:main├─┐open: deferred::server host="localhost", port=8080
 1:main│ ├─  Xms INFO deferred starting
 1:main│ ├─  Xs  INFO deferred listening

@@ -246,7 +246,7 @@ impl Buffers {
         }
 
         indent_block(
-            &mut self.current_buf,
+            &self.current_buf,
             &mut self.indent_buf,
             indent % config.wraparound,
             config.indent_amount,
@@ -479,7 +479,7 @@ fn indent_block_with_lines(
 }
 
 fn indent_block(
-    block: &mut String,
+    block: &str,
     buf: &mut String,
     mut indent: usize,
     indent_amount: usize,

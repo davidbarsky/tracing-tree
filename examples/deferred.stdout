@@ -1,45 +1,45 @@
 -> This prints before the span open message
 1:main┐open: deferred::hierarchical-example version=0.1
-1:main├─┐open: deferred::server host="localhost", port=8080
-1:main│ ├─  Xms INFO deferred starting
-1:main│ ├─  Xs  INFO deferred listening
+1:main└─┐open: deferred::server host="localhost", port=8080
+1:main  ├─  Xms INFO deferred starting
+1:main  ├─  Xs  INFO deferred listening
 -> Deferring two levels of spans
-1:main│ ├┐pre_open: deferred::server host="localhost", port=8080
-1:main│ │└┐open(v): deferred::connections 
-1:main│ │ ├─┐open: deferred::conn peer_addr="82.9.9.9", port=42381
-1:main│ │ │ ├─  Xms DEBUG deferred connected, peer="peer1"
-1:main│ │ │ ├─  Xms DEBUG deferred message received, length=2
-1:main│ │ │┌┘close(v): deferred::conn peer_addr="82.9.9.9", port=42381
-1:main│ │ ├┘post_close: deferred::connections 
-1:main│ │ ├┐pre_open: deferred::connections 
-1:main│ │ │└┐open(v): deferred::conn peer_addr="8.8.8.8", port=18230
-1:main│ │ │ ├─  Xms DEBUG deferred connected, peer="peer3"
-1:main│ │ │┌┘close(v): deferred::conn peer_addr="8.8.8.8", port=18230
-1:main│ │ ├┘post_close: deferred::connections 
-1:main│ │ ├┐pre_open: deferred::connections 
-1:main│ │ │└┐open(v): deferred::foomp 42 <- format string, normal_var=43
-1:main│ │ │ ├─  Xms ERROR deferred hello
-1:main│ │ │┌┘close(v): deferred::foomp 42 <- format string, normal_var=43
-1:main│ │ ├┘post_close: deferred::connections 
-1:main│ │ ├┐pre_open: deferred::connections 
-1:main│ │ │└┐open(v): deferred::conn peer_addr="82.9.9.9", port=42381
-1:main│ │ │ ├─  Xms WARN deferred weak encryption requested, algo="xor"
-1:main│ │ │ ├─  Xms DEBUG deferred response sent, length=8
-1:main│ │ │ ├─  Xms DEBUG deferred disconnected
-1:main│ │ │┌┘close(v): deferred::conn peer_addr="82.9.9.9", port=42381
-1:main│ │ ├┘post_close: deferred::connections 
-1:main│ │ ├┐pre_open: deferred::connections 
-1:main│ │ │└┐open(v): deferred::conn peer_addr="8.8.8.8", port=18230
-1:main│ │ │ ├─  Xms DEBUG deferred message received, length=5
-1:main│ │ │ ├─  Xms DEBUG deferred response sent, length=8
-1:main│ │ │ ├─  Xms DEBUG deferred disconnected
-1:main│ │ │┌┘close(v): deferred::conn peer_addr="8.8.8.8", port=18230
-1:main│ │ ├┘post_close: deferred::connections 
-1:main│ │┌┘close(v): deferred::connections 
-1:main│ ├┘post_close: deferred::server host="localhost", port=8080
-1:main│ ├─  Xs  WARN deferred internal error
-1:main│ ├─  Xs  ERROR deferred this is a log message
-1:main│ ├─  Xs  INFO deferred exit
-1:main│┌┘close(v): deferred::server host="localhost", port=8080
-1:main├┘post_close: deferred::hierarchical-example version=0.1
+1:main  └┐pre_open: deferred::server host="localhost", port=8080
+1:main   └┐open(v): deferred::connections 
+1:main    └─┐open: deferred::conn peer_addr="82.9.9.9", port=42381
+1:main      ├─  Xms DEBUG deferred connected, peer="peer1"
+1:main      ├─  Xms DEBUG deferred message received, length=2
+1:main     ┌┘close(v): deferred::conn peer_addr="82.9.9.9", port=42381
+1:main    ┌┘post_close: deferred::connections 
+1:main    └┐pre_open: deferred::connections 
+1:main     └┐open(v): deferred::conn peer_addr="8.8.8.8", port=18230
+1:main      ├─  Xms DEBUG deferred connected, peer="peer3"
+1:main     ┌┘close(v): deferred::conn peer_addr="8.8.8.8", port=18230
+1:main    ┌┘post_close: deferred::connections 
+1:main    └┐pre_open: deferred::connections 
+1:main     └┐open(v): deferred::foomp 42 <- format string, normal_var=43
+1:main      ├─  Xms ERROR deferred hello
+1:main     ┌┘close(v): deferred::foomp 42 <- format string, normal_var=43
+1:main    ┌┘post_close: deferred::connections 
+1:main    └┐pre_open: deferred::connections 
+1:main     └┐open(v): deferred::conn peer_addr="82.9.9.9", port=42381
+1:main      ├─  Xms WARN deferred weak encryption requested, algo="xor"
+1:main      ├─  Xms DEBUG deferred response sent, length=8
+1:main      ├─  Xms DEBUG deferred disconnected
+1:main     ┌┘close(v): deferred::conn peer_addr="82.9.9.9", port=42381
+1:main    ┌┘post_close: deferred::connections 
+1:main    └┐pre_open: deferred::connections 
+1:main     └┐open(v): deferred::conn peer_addr="8.8.8.8", port=18230
+1:main      ├─  Xms DEBUG deferred message received, length=5
+1:main      ├─  Xms DEBUG deferred response sent, length=8
+1:main      ├─  Xms DEBUG deferred disconnected
+1:main     ┌┘close(v): deferred::conn peer_addr="8.8.8.8", port=18230
+1:main    ┌┘post_close: deferred::connections 
+1:main   ┌┘close(v): deferred::connections 
+1:main  ┌┘post_close: deferred::server host="localhost", port=8080
+1:main  ├─  Xs  WARN deferred internal error
+1:main  ├─  Xs  ERROR deferred this is a log message
+1:main  ├─  Xs  INFO deferred exit
+1:main ┌┘close(v): deferred::server host="localhost", port=8080
+1:main┌┘post_close: deferred::hierarchical-example version=0.1
 1:main┘close(v): deferred::hierarchical-example version=0.1

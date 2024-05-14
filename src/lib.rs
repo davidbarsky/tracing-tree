@@ -10,7 +10,11 @@ use std::{
     io::{self, IsTerminal},
     iter::Fuse,
     mem,
-    sync::Mutex,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Mutex,
+    },
+    thread::LocalKey,
     time::Instant,
 };
 use tracing_core::{
@@ -463,6 +467,28 @@ where
             unit = self.styled(Style::new().dimmed(), unit),
         )
     }
+
+    fn is_recursive() -> Option<RecursiveGuard> {
+        thread_local! {
+            pub static IS_EMPTY: AtomicBool = const { AtomicBool::new(true) };
+        }
+
+        IS_EMPTY.with(|is_empty| {
+            is_empty
+                .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
+                .ok()
+                .map(|_| RecursiveGuard(&IS_EMPTY))
+        })
+    }
+}
+
+struct RecursiveGuard(&'static LocalKey<AtomicBool>);
+
+impl Drop for RecursiveGuard {
+    fn drop(&mut self) {
+        self.0
+            .with(|is_empty| is_empty.store(true, Ordering::Relaxed));
+    }
 }
 
 impl<S, W, FT> Layer<S> for HierarchicalLayer<W, FT>
@@ -472,6 +498,10 @@ where
     FT: FormatTime + 'static,
 {
     fn on_new_span(&self, attrs: &Attributes, id: &Id, ctx: Context<S>) {
+        let Some(_guard) = Self::is_recursive() else {
+            return;
+        };
+
         let span = ctx.span(id).expect("in new_span but span does not exist");
 
         if span.extensions().get::<Data>().is_none() {
@@ -507,6 +537,10 @@ where
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<S>) {
+        let Some(_guard) = Self::is_recursive() else {
+            return;
+        };
+
         let span = ctx.current_span();
         let span_id = span.id();
         let span = span_id.and_then(|id| ctx.span(id));
@@ -588,6 +622,10 @@ where
     }
 
     fn on_close(&self, id: Id, ctx: Context<S>) {
+        let Some(_guard) = Self::is_recursive() else {
+            return;
+        };
+
         let bufs = &mut *self.bufs.lock().unwrap();
 
         let span = ctx.span(&id).expect("invalid span in on_close");

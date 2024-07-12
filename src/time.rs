@@ -1,3 +1,9 @@
+use std::{fmt::Write, time::Duration};
+
+use nu_ansi_term::Style;
+
+use crate::styled;
+
 /// A type that can measure and format the current time.
 ///
 /// This trait is used by [HierarchicalLayer] to include a timestamp with each
@@ -21,6 +27,12 @@
 //   since it doesn't have a public constructor.
 pub trait FormatTime {
     fn format_time(&self, w: &mut impl std::fmt::Write) -> std::fmt::Result;
+    fn style_timestamp(
+        &self,
+        ansi: bool,
+        elapsed: Duration,
+        w: &mut impl std::fmt::Write,
+    ) -> std::fmt::Result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,6 +42,14 @@ impl FormatTime for () {
     fn format_time(&self, _w: &mut impl std::fmt::Write) -> std::fmt::Result {
         Ok(())
     }
+    fn style_timestamp(
+        &self,
+        _ansi: bool,
+        _elapsed: Duration,
+        _w: &mut impl std::fmt::Write,
+    ) -> std::fmt::Result {
+        Ok(())
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -37,13 +57,25 @@ impl FormatTime for () {
 /// Retrieve and print the current wall-clock time in UTC timezone.
 #[cfg(feature = "time")]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
-pub struct UtcDateTime;
+pub struct UtcDateTime {
+    /// Whether to print the time with higher precision.
+    pub higher_precision: bool,
+}
 
 #[cfg(feature = "time")]
 impl FormatTime for UtcDateTime {
     fn format_time(&self, w: &mut impl std::fmt::Write) -> std::fmt::Result {
         let time = time::OffsetDateTime::now_utc();
         write!(w, "{} {}", time.date(), time.time())
+    }
+
+    fn style_timestamp(
+        &self,
+        ansi: bool,
+        elapsed: Duration,
+        w: &mut impl std::fmt::Write,
+    ) -> std::fmt::Result {
+        style_timestamp(ansi, self.higher_precision, elapsed, w)
     }
 }
 
@@ -61,13 +93,24 @@ impl FormatTime for UtcDateTime {
 //   private `datetime` module to format the actual time.
 #[cfg(feature = "time")]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
-pub struct LocalDateTime;
+pub struct LocalDateTime {
+    /// Whether to print the time with higher precision.
+    pub higher_precision: bool,
+}
 
 #[cfg(feature = "time")]
 impl FormatTime for LocalDateTime {
     fn format_time(&self, w: &mut impl std::fmt::Write) -> std::fmt::Result {
         let time = time::OffsetDateTime::now_local().expect("time offset cannot be determined");
         write!(w, "{}", time)
+    }
+    fn style_timestamp(
+        &self,
+        ansi: bool,
+        elapsed: Duration,
+        w: &mut impl std::fmt::Write,
+    ) -> std::fmt::Result {
+        style_timestamp(ansi, self.higher_precision, elapsed, w)
     }
 }
 
@@ -80,19 +123,22 @@ impl FormatTime for LocalDateTime {
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Uptime {
     epoch: std::time::Instant,
+    /// Whether to print the time with higher precision.
+    pub higher_precision: bool,
 }
 
 impl Default for Uptime {
     fn default() -> Self {
-        Uptime {
-            epoch: std::time::Instant::now(),
-        }
+        Uptime::from(std::time::Instant::now())
     }
 }
 
 impl From<std::time::Instant> for Uptime {
     fn from(epoch: std::time::Instant) -> Self {
-        Uptime { epoch }
+        Uptime {
+            epoch,
+            higher_precision: false,
+        }
     }
 }
 
@@ -101,6 +147,84 @@ impl FormatTime for Uptime {
         let e = self.epoch.elapsed();
         write!(w, "{:4}.{:06}s", e.as_secs(), e.subsec_micros())
     }
+    fn style_timestamp(
+        &self,
+        ansi: bool,
+        elapsed: Duration,
+        w: &mut impl std::fmt::Write,
+    ) -> std::fmt::Result {
+        style_timestamp(ansi, self.higher_precision, elapsed, w)
+    }
+}
+
+fn style_timestamp(
+    ansi: bool,
+    higher_precision: bool,
+    elapsed: Duration,
+    w: &mut impl Write,
+) -> std::fmt::Result {
+    if higher_precision {
+        format_timestamp_with_decimals(ansi, elapsed, w)
+    } else {
+        format_timestamp(ansi, elapsed, w)
+    }
+}
+
+fn format_timestamp(ansi: bool, elapsed: Duration, w: &mut impl Write) -> std::fmt::Result {
+    let millis = elapsed.as_millis();
+    let secs = elapsed.as_secs();
+
+    // Convert elapsed time to appropriate units: ms, s, or m.
+    // - Less than 1s : use ms
+    // - Less than 1m : use s
+    // - 1m and above : use m
+    let (n, unit) = if millis < 1000 {
+        (millis as _, "ms")
+    } else if secs < 60 {
+        (secs, "s ")
+    } else {
+        (secs / 60, "m ")
+    };
+
+    let timestamp = format!("{n:>3}");
+    write_style_timestamp(ansi, timestamp, unit, w)
+}
+
+fn format_timestamp_with_decimals(
+    ansi: bool,
+    elapsed: Duration,
+    w: &mut impl Write,
+) -> std::fmt::Result {
+    let secs = elapsed.as_secs_f64();
+
+    // Convert elapsed time to appropriate units: μs, ms, or s.
+    // - Less than 1ms: use μs
+    // - Less than 1s : use ms
+    // - 1s and above : use s
+    let (n, unit) = if secs < 0.001 {
+        (secs * 1_000_000.0, "μs")
+    } else if secs < 1.0 {
+        (secs * 1_000.0, "ms")
+    } else {
+        (secs, "s ")
+    };
+
+    let timestamp = format!(" {n:.2}");
+    write_style_timestamp(ansi, timestamp, unit, w)
+}
+
+fn write_style_timestamp(
+    ansi: bool,
+    timestamp: String,
+    unit: &str,
+    w: &mut impl Write,
+) -> std::fmt::Result {
+    write!(
+        w,
+        "{timestamp}{unit}",
+        timestamp = styled(ansi, Style::new().dimmed(), timestamp),
+        unit = styled(ansi, Style::new().dimmed(), unit),
+    )
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -110,7 +234,15 @@ where
     F: FormatTime,
 {
     fn format_time(&self, w: &mut impl std::fmt::Write) -> std::fmt::Result {
-        (*self).format_time(w)
+        F::format_time(self, w)
+    }
+    fn style_timestamp(
+        &self,
+        ansi: bool,
+        duration: Duration,
+        w: &mut impl std::fmt::Write,
+    ) -> std::fmt::Result {
+        F::style_timestamp(self, ansi, duration, w)
     }
 }
 

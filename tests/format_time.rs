@@ -19,6 +19,14 @@ impl FormatTime for FormatTimeCounter {
         self.0.fetch_add(1, Ordering::Relaxed);
         Ok(())
     }
+    fn style_timestamp(
+        &self,
+        _ansi: bool,
+        _elapsed: std::time::Duration,
+        _w: &mut impl std::fmt::Write,
+    ) -> std::fmt::Result {
+        Ok(())
+    }
 }
 
 #[test]

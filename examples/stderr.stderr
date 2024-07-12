@@ -1,109 +1,109 @@
 ┐fibonacci_seq{to=5}
-├─  Xms DEBUG Pushing 0 fibonacci
+├─ DEBUG Pushing 0 fibonacci
 └─┐nth_fibonacci{n=0}
-  ├─  Xms DEBUG Base case
+  ├─ DEBUG Base case
 ┌─┘
-├─  Xms DEBUG Pushing 1 fibonacci
+├─ DEBUG Pushing 1 fibonacci
 └─┐nth_fibonacci{n=1}
-  ├─  Xms DEBUG Base case
+  ├─ DEBUG Base case
 ┌─┘
-├─  Xms DEBUG Pushing 2 fibonacci
+├─ DEBUG Pushing 2 fibonacci
 └─┐nth_fibonacci{n=2}
-  ├─  Xms DEBUG Recursing
+  ├─ DEBUG Recursing
   └─┐nth_fibonacci{n=1}
-    ├─  Xms DEBUG Base case
+    ├─ DEBUG Base case
   ┌─┘
   └─┐nth_fibonacci{n=0}
-    ├─  Xms DEBUG Base case
+    ├─ DEBUG Base case
   ┌─┘
 ┌─┘
-├─  Xms DEBUG Pushing 3 fibonacci
+├─ DEBUG Pushing 3 fibonacci
 └─┐nth_fibonacci{n=3}
-  ├─  Xms DEBUG Recursing
+  ├─ DEBUG Recursing
   └─┐nth_fibonacci{n=2}
-    ├─  Xms DEBUG Recursing
+    ├─ DEBUG Recursing
     └─┐nth_fibonacci{n=1}
-      ├─  Xms DEBUG Base case
+      ├─ DEBUG Base case
     ┌─┘
     └─┐nth_fibonacci{n=0}
-      ├─  Xms DEBUG Base case
+      ├─ DEBUG Base case
     ┌─┘
   ┌─┘
   └─┐nth_fibonacci{n=1}
-    ├─  Xms DEBUG Base case
+    ├─ DEBUG Base case
   ┌─┘
 ┌─┘
-├─  Xms DEBUG Pushing 4 fibonacci
+├─ DEBUG Pushing 4 fibonacci
 └─┐nth_fibonacci{n=4}
-  ├─  Xms DEBUG Recursing
+  ├─ DEBUG Recursing
   └─┐nth_fibonacci{n=3}
-    ├─  Xms DEBUG Recursing
+    ├─ DEBUG Recursing
     └─┐nth_fibonacci{n=2}
-      ├─  Xms DEBUG Recursing
+      ├─ DEBUG Recursing
       └─┐nth_fibonacci{n=1}
-        ├─  Xms DEBUG Base case
+        ├─ DEBUG Base case
       ┌─┘
       └─┐nth_fibonacci{n=0}
-        ├─  Xms DEBUG Base case
+        ├─ DEBUG Base case
       ┌─┘
     ┌─┘
     └─┐nth_fibonacci{n=1}
-      ├─  Xms DEBUG Base case
+      ├─ DEBUG Base case
     ┌─┘
   ┌─┘
   └─┐nth_fibonacci{n=2}
-    ├─  Xms DEBUG Recursing
+    ├─ DEBUG Recursing
     └─┐nth_fibonacci{n=1}
-      ├─  Xms DEBUG Base case
+      ├─ DEBUG Base case
     ┌─┘
     └─┐nth_fibonacci{n=0}
-      ├─  Xms DEBUG Base case
+      ├─ DEBUG Base case
     ┌─┘
   ┌─┘
 ┌─┘
-├─  Xms DEBUG Pushing 5 fibonacci
+├─ DEBUG Pushing 5 fibonacci
 └─┐nth_fibonacci{n=5}
-  ├─  Xms DEBUG Recursing
+  ├─ DEBUG Recursing
   └─┐nth_fibonacci{n=4}
-    ├─  Xms DEBUG Recursing
+    ├─ DEBUG Recursing
     └─┐nth_fibonacci{n=3}
-      ├─  Xms DEBUG Recursing
+      ├─ DEBUG Recursing
       └─┐nth_fibonacci{n=2}
-        ├─  Xms DEBUG Recursing
+        ├─ DEBUG Recursing
         └─┐nth_fibonacci{n=1}
-          ├─  Xms DEBUG Base case
+          ├─ DEBUG Base case
         ┌─┘
         └─┐nth_fibonacci{n=0}
-          ├─  Xms DEBUG Base case
+          ├─ DEBUG Base case
         ┌─┘
       ┌─┘
       └─┐nth_fibonacci{n=1}
-        ├─  Xms DEBUG Base case
+        ├─ DEBUG Base case
       ┌─┘
     ┌─┘
     └─┐nth_fibonacci{n=2}
-      ├─  Xms DEBUG Recursing
+      ├─ DEBUG Recursing
       └─┐nth_fibonacci{n=1}
-        ├─  Xms DEBUG Base case
+        ├─ DEBUG Base case
       ┌─┘
       └─┐nth_fibonacci{n=0}
-        ├─  Xms DEBUG Base case
+        ├─ DEBUG Base case
       ┌─┘
     ┌─┘
   ┌─┘
   └─┐nth_fibonacci{n=3}
-    ├─  Xms DEBUG Recursing
+    ├─ DEBUG Recursing
     └─┐nth_fibonacci{n=2}
-      ├─  Xms DEBUG Recursing
+      ├─ DEBUG Recursing
       └─┐nth_fibonacci{n=1}
-        ├─  Xms DEBUG Base case
+        ├─ DEBUG Base case
       ┌─┘
       └─┐nth_fibonacci{n=0}
-        ├─  Xms DEBUG Base case
+        ├─ DEBUG Base case
       ┌─┘
     ┌─┘
     └─┐nth_fibonacci{n=1}
-      ├─  Xms DEBUG Base case
+      ├─ DEBUG Base case
     ┌─┘
   ┌─┘
 ┌─┘

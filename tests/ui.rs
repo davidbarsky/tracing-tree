@@ -8,12 +8,6 @@ fn main() -> Result<()> {
     config.args.push("feature=\"tracing-log\"".into());
     config.out_dir = Some("target/ui_test".into());
     config.mode = Mode::Run { exit_code: 0 };
-    config.stdout_filter("[0-9]{3}(ms|s|m)", "  X$1");
-    config.stdout_filter("[0-9]{2}(ms|s|m)", " X$1");
-    config.stdout_filter("[0-9]{1}(ms|s|m)", "X$1");
-    config.stderr_filter("[0-9]{3}(ms|s|m)", "  X$1");
-    config.stderr_filter("[0-9]{2}(ms|s|m)", " X$1");
-    config.stderr_filter("[0-9]{1}(ms|s|m)", "X$1");
     config.output_conflict_handling = if std::env::args().any(|arg| arg == "--bless") {
         OutputConflictHandling::Bless
     } else {

@@ -172,7 +172,7 @@ impl Default for Config {
             targets: false,
             render_thread_ids: false,
             render_thread_names: false,
-            wraparound: usize::max_value(),
+            wraparound: usize::MAX,
             verbose_entry: false,
             verbose_exit: false,
             span_retrace: false,

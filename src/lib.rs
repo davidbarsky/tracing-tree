@@ -246,15 +246,22 @@ where
         V: fmt::Display + 'a,
     {
         let mut kvs = kvs.into_iter();
+        let (nl, first) = if self.config.bracketed_fields {
+            ("", "")
+        } else if self.config.indent_lines {
+            ("\n ", "\n ")
+        } else {
+            (", ", " ")
+        };
         if let Some((k, v)) = kvs.next() {
             if k == "message" {
-                write!(buf, "{}", v)?;
+                write!(buf, " {}", v)?;
             } else {
-                write!(buf, "{}={}", k, v)?;
+                write!(buf, "{first}{}={}", k, v)?;
             }
         }
         for (k, v) in kvs {
-            write!(buf, ", {}={}", k, v)?;
+            write!(buf, "{nl}{}={}", k, v)?;
         }
         Ok(())
     }
@@ -372,8 +379,6 @@ where
                     self.styled(Style::new().fg(Color::Green).bold(), "{") // Style::new().fg(Color::Green).dimmed().paint("{")
                 )
                 .unwrap();
-            } else {
-                write!(current_buf, " ").unwrap();
             }
             self.print_kvs(&mut current_buf, data.kvs.iter().map(|(k, v)| (*k, v)))
                 .unwrap();
@@ -557,7 +562,10 @@ where
             .expect("Unable to write to buffer");
         }
 
-        let mut visitor = FmtEvent { comma: false, bufs };
+        let mut visitor = FmtEvent {
+            bufs,
+            lines: self.config.indent_lines,
+        };
         event.record(&mut visitor);
         visitor
             .bufs

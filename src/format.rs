@@ -448,12 +448,14 @@ fn indent_block_with_lines(
 
     // add the rest of the indentation, since we don't want to draw horizontal lines
     // for subsequent lines
-    for i in 0..indent_amount {
-        if i % indent_amount == 0 {
-            s.push_str(LINE_VERT);
-        } else {
-            s.push(' ');
-        }
+    match style {
+        SpanMode::Open { .. } | SpanMode::Retrace { .. } => s.push_str("  "),
+        SpanMode::Close { .. } => s.push(' '),
+        _ => {}
+    }
+    s.push_str(LINE_VERT);
+    for _ in 1..=indent_amount {
+        s.push(' ');
     }
 
     // add all of the actual content, with each line preceded by the indent string
@@ -489,11 +491,16 @@ fn indent_block(
     if indent_lines {
         indent_block_with_lines(&lines, buf, indent, indent_amount, prefix, style);
     } else {
-        let indent_str = String::from(" ").repeat(indent_spaces);
+        let mut indent_str = " ".repeat(indent_spaces);
+        let mut first_line = true;
         for line in lines {
             buf.push_str(prefix);
             buf.push(' ');
             buf.push_str(&indent_str);
+            if first_line {
+                first_line = false;
+                indent_str.push_str("  ");
+            }
             buf.push_str(line);
             buf.push('\n');
         }

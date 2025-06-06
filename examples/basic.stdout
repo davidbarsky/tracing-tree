@@ -20,6 +20,17 @@
 1:main   ┌┘basic::foomp 42 <- format string, normal_var=43
 1:main  ┌┘basic::server host="localhost", port=8080
 1:main  └┐basic::server host="localhost", port=8080
+1:main   └┐basic:: val=PrettyPrintMe {
+1:main  │     value_a: 42,
+1:main  │     value_b: "hello",
+1:main  │ }
+1:main    ├─ ERROR basic hello
+1:main   ┌┘basic:: val=PrettyPrintMe {
+1:main  │     value_a: 42,
+1:main  │     value_b: "hello",
+1:main  │ }
+1:main  ┌┘basic::server host="localhost", port=8080
+1:main  └┐basic::server host="localhost", port=8080
 1:main   └┐basic::conn peer_addr="82.9.9.9", port=42381
 1:main    ├─ WARN basic weak encryption requested, algo="xor"
 1:main    ├─ DEBUG basic response sent, length=8

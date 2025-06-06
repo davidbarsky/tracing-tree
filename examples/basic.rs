@@ -2,6 +2,12 @@ use tracing::{debug, error, info, instrument, span, warn, Level};
 use tracing_subscriber::{layer::SubscriberExt, registry::Registry};
 use tracing_tree::HierarchicalLayer;
 
+#[derive(Debug)]
+struct PrettyPrintMe {
+    value_a: u32,
+    value_b: String,
+}
+
 fn main() {
     let layer = HierarchicalLayer::default()
         .with_writer(std::io::stdout)
@@ -46,6 +52,18 @@ fn main() {
         "{} <- format string",
         42
     );
+    peer3.in_scope(|| {
+        error!("hello");
+    });
+    drop(peer3);
+    let val = format!(
+        "{:#?}",
+        PrettyPrintMe {
+            value_a: 42,
+            value_b: "hello".into(),
+        }
+    );
+    let peer3 = span!(Level::TRACE, "", val = %val);
     peer3.in_scope(|| {
         error!("hello");
     });

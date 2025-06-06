@@ -9,6 +9,11 @@
 1:main      DEBUG no_indent connected
 1:main     no_indent::foomp 42 <- format string, normal_var=43
 1:main      ERROR no_indent hello
+1:main     no_indent:: val=PrettyPrintMe {
+1:main         value_a: 42,
+1:main         value_b: "hello",
+1:main     }
+1:main      ERROR no_indent hello
 1:main     no_indent::conn peer_addr="82.9.9.9", port=42381
 1:main      WARN no_indent weak encryption requested, algo="xor"
 1:main      DEBUG no_indent response sent, length=8

@@ -601,6 +601,18 @@ where
             }
         }
     }
+
+    fn on_record(&self, id: &Id, values: &tracing_core::span::Record<'_>, ctx: Context<S>) {
+        let Some(_guard) = Self::is_recursive() else {
+            return;
+        };
+
+        if let Some(span) = ctx.span(id) {
+            if let Some(data) = span.extensions_mut().get_mut::<Data>() {
+                values.record(data);
+            }
+        }
+    }
 }
 
 fn scope_path<'a, R: LookupSpan<'a>>(span: &SpanRef<'a, R>) -> ScopeFromRoot<'a, R> {

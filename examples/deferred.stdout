@@ -1,8 +1,8 @@
 -> This prints before the span open message
 1:main┐open: deferred::hierarchical-example version=0.1
-1:main└─┐open: deferred::lazy span 
+1:main└─┐open: deferred::lazy span work_units=3
 1:main  ├─ INFO deferred doing some work
-1:main ┌┘close(v): deferred::lazy span 
+1:main ┌┘close(v): deferred::lazy span work_units=3
 1:main┌┘post_close: deferred::hierarchical-example version=0.1
 1:main└┐pre_open: deferred::hierarchical-example version=0.1
 1:main └┐open(v): deferred::server host="localhost", port=8080

@@ -1,3 +1,4 @@
+use tracing::field::Empty;
 use tracing::{debug, error, info, level_filters::LevelFilter, span, trace, warn, Level};
 use tracing_subscriber::{layer::SubscriberExt, registry::Registry, Layer};
 use tracing_tree::HierarchicalLayer;
@@ -27,6 +28,13 @@ fn main() {
     let server_span = span!(Level::DEBUG, "server", host = "localhost", port = 8080);
 
     println!("-> This prints before the span open message");
+
+    let lazy = span!(Level::DEBUG, "lazy span", work_units = Empty);
+    lazy.record("work_units", &3);
+    lazy.in_scope(|| {
+        info!("doing some work");
+    });
+    drop(lazy);
 
     let _e2 = server_span.enter();
     info!("starting");

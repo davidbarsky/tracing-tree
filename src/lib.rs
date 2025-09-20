@@ -339,7 +339,7 @@ where
         let should_write = match style {
             SpanMode::Open { .. } | SpanMode::Event => true,
             // Print the parent of a new span again before entering the child
-            SpanMode::PreOpen { .. } if self.config.verbose_entry => true,
+            SpanMode::PreOpen if self.config.verbose_entry => true,
             SpanMode::Close { verbose } => verbose,
             // Generated if `span_retrace` is enabled
             SpanMode::Retrace { .. } => true,

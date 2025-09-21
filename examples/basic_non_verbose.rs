@@ -1,4 +1,4 @@
-use tracing::{debug, error, info, instrument, span, warn, Level};
+use tracing::{debug, error, info, span, warn, Level};
 use tracing_subscriber::{layer::SubscriberExt, registry::Registry};
 use tracing_tree::HierarchicalLayer;
 
@@ -67,15 +67,4 @@ fn main() {
     warn!("internal error");
     log::error!("this is a log message");
     info!("exit");
-}
-
-#[instrument]
-fn call_a(name: &str) {
-    info!(name, "got a name");
-    call_b(name)
-}
-
-#[instrument]
-fn call_b(name: &str) {
-    info!(name, "got a name");
 }

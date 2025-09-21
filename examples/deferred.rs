@@ -99,6 +99,7 @@ fn main() {
     info!("exit");
 }
 
+#[allow(dead_code)]
 #[instrument]
 fn call_a(name: &str) {
     info!(name, "got a name");

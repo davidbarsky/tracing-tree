@@ -2,6 +2,7 @@ use tracing::{debug, error, info, instrument, span, warn, Level};
 use tracing_subscriber::{layer::SubscriberExt, registry::Registry};
 use tracing_tree::HierarchicalLayer;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 struct PrettyPrintMe {
     value_a: u32,
@@ -85,6 +86,7 @@ fn main() {
     info!("exit");
 }
 
+#[allow(dead_code)]
 #[instrument]
 fn call_a(name: &str) {
     info!(name, "got a name");

@@ -253,7 +253,7 @@ impl Buffers {
         // Render something when wraparound occurs so the user is aware of it
         if config.indent_lines {
             match style {
-                SpanMode::PreOpen { .. } | SpanMode::Open { .. } => {
+                SpanMode::PreOpen | SpanMode::Open { .. } => {
                     if indent > 0 && (indent + 1) % config.wraparound == 0 {
                         self.current_buf.push_str(&prefix);
                         for _ in 0..(indent % config.wraparound * config.indent_amount) {
@@ -347,7 +347,7 @@ fn indent_block_with_lines(
                     SpanMode::Open { .. } => buf.push_str(LINE_OPEN),
                     SpanMode::Retrace { .. } => buf.push_str(LINE_OPEN),
                     SpanMode::Close { .. } => buf.push_str(LINE_CLOSE),
-                    SpanMode::PreOpen { .. } | SpanMode::PostClose => {}
+                    SpanMode::PreOpen | SpanMode::PostClose => {}
                     SpanMode::Event => {}
                 }
             }
